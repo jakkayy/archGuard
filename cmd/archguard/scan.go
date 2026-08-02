@@ -71,6 +71,8 @@ var scanCmd = &cobra.Command{
 		switch formatFlag {
 		case "json":
 			rep = reporter.NewJSONReporter()
+		case "sarif":
+			rep = reporter.NewSARIFReporter()
 		default:
 			rep = reporter.NewConsoleReporter(noColor)
 		}
@@ -89,7 +91,7 @@ var scanCmd = &cobra.Command{
 
 func init() {
 	scanCmd.Flags().StringVarP(&configPath, "config", "c", "archguard.yaml", "Path to archguard.yaml configuration file")
-	scanCmd.Flags().StringVarP(&formatFlag, "format", "f", "console", "Report format (console, json)")
+	scanCmd.Flags().StringVarP(&formatFlag, "format", "f", "console", "Report format (console, json, sarif)")
 	scanCmd.Flags().BoolVar(&noColor, "no-color", false, "Disable colored terminal output")
 
 	rootCmd.AddCommand(scanCmd)
