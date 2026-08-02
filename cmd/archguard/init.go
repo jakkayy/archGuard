@@ -160,21 +160,21 @@ var initCmd = &cobra.Command{
 		}
 
 		namingEnabled := true
-		namingPattern := "^[a-z0-9._-]+$"
+		namingPattern := `^[a-z0-9._-]+$`
 
 		if strings.HasPrefix(selectedNaming, "Flexible") || isFrontend || isFullStack {
 			if !strings.HasPrefix(selectedNaming, "Disabled") && !strings.HasPrefix(selectedNaming, "Strict") {
-				namingPattern = "^[a-zA-Z0-9._\\-\\[\\]\\(\\)]+$"
+				namingPattern = `^[a-zA-Z0-9._\-\[\]\(\)]+$`
 			}
 		}
 
 		if strings.HasPrefix(selectedNaming, "Disabled") {
 			namingEnabled = false
 		} else if strings.HasPrefix(selectedNaming, "Flexible") {
-			namingPattern = "^[a-zA-Z0-9._\\-\\[\\]\\(\\)]+$"
+			namingPattern = `^[a-zA-Z0-9._\-\[\]\(\)]+$`
 		}
 
-		// Construct archguard.yaml content
+		// Construct archguard.yaml content using single quotes for pattern to avoid YAML escape errors
 		configContent := fmt.Sprintf(`version: "v1"
 
 # Generated for: %s (%s)
@@ -183,7 +183,7 @@ rules:
   file-naming:
     enabled: %t
     severity: WARNING
-    pattern: "%s"
+    pattern: '%s'
 
   openapi-exists:
     enabled: %t
@@ -208,7 +208,7 @@ rules:
   file-naming:
     enabled: true
     severity: WARNING
-    pattern: "^[a-zA-Z0-9._-]+$"
+    pattern: '^[a-zA-Z0-9._-]+$'
 
   openapi-exists:
     enabled: false
