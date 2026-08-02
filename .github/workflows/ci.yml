@@ -11,6 +11,10 @@ jobs:
   test-and-scan:
     name: Test & Quality Inspection
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
