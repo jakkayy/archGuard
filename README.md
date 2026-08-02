@@ -2,9 +2,10 @@
 
 > **An Open-Source Engineering Policy Engine (ESLint for Engineering Policies)**
 > 
-> *เปลี่ยนกฎการเขียนโค้ดและสถาปัตยกรรมขององค์กร ให้กลายเป็นการตรวจสอบอัตโนมัติ (Automated Engineering Policy Engine)*
+> *เปลี่ยนกฎการเขียนโค้ด มาตรฐานความปลอดภัย และสถาปัตยกรรมขององค์กร ให้กลายเป็นการตรวจสอบอัตโนมัติ (Automated Engineering Policy Engine)*
 
-[![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?style=flat&logo=go)](https://golang.org)
+[![Release](https://img.shields.io/badge/Release-v0.4.1-blue.svg)](https://github.com/jakkayy/archGuard/releases)
+[![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat&logo=go)](https://golang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
@@ -13,89 +14,129 @@
 ## 📌 Vision & Problem Statement
 
 เมื่อทีมพัฒนามีขนาดใหญ่ขึ้น ปัญหาเรื่องมาตรฐานโค้ดและการละเมิดสถาปัตยกรรมมักจะเกิดขึ้นซ้ำๆ เช่น:
-- **API Breaking Changes:** มีคนลบ Field หรือเปลี่ยน Type ใน API โดยไม่ตั้งใจ ส่งผลให้ระบบอื่นพัง
-- **Architecture Violation:** เขียนโค้ดข้าม Layer (เช่น Controller เรียก Database โดยตรง)
-- **Code Governance:** ลืมทำตาม Naming Convention หรือลืมสร้างไฟล์ Specification สำคัญ
+- 🔐 **Hardcoded Secrets:** มีคนเผลอวาง API Keys, AWS Credentials, หรือ Private Keys ลงในโค้ดดิบ
+- 📁 **Structure & Mandatory Files:** ลืมสร้างไฟล์เอกสารสำคัญประจำองค์กร เช่น `README.md`, `.gitignore`, `Dockerfile`
+- 🚨 **API Breaking Changes:** มีคนลบ Field หรือเปลี่ยน Type ใน API โดยไม่ตั้งใจ
+- 📐 **Code Naming Standards:** ลืมทำตาม Naming Convention ของแต่ละ Framework
 
-**ArchGuard** ทำหน้าที่เป็น **Policy Engine** ที่สแกนและบังคับใช้กฎทางวิศวกรรม (Engineering Policies) ตั้งแต่บนเครื่องของ Developer (`archguard scan`) ไปจนถึงขั้นตอน CI/CD ก่อนจะ Merge โค้ดเข้าสู่ระบบจริง
+**ArchGuard** ทำหน้าที่เป็น **Engineering Policy Engine** ที่สแกนและบังคับใช้กฎทางวิศวกรรมแบบสากล ตั้งแต่บนเครื่องของ Developer ไปจนถึงระบบ CI/CD บน GitHub
 
 ---
 
 ## 🌟 Key Features
 
-- 🚀 **CLI-First & Shift-Left:** รันสแกนบนเครื่อง Developer ได้ภายในไม่กี่มิลลิวินาที
-- 🔌 **Policy-First & Plugin Architecture:** Core Engine ปราศจาก Hardcoded Business Rules และรองรับ Plugin ในอนาคต
-- 🎨 **Rich Terminal Output:** แสดงผลการตรวจด้วยสีสัน แยกสัญลักษณ์ `🚨 ERROR`, `⚠️ WARN`, `ℹ️ INFO` ชัดเจน
-- 📄 **Multiple Output Formats:** รองรับการแสดงผลทั้ง CLI Console และ **JSON** สำหรับนำไปใช้ใน CI/CD Pipeline
-- 🛡️ **CI/CD Native:** คืนค่า Exit Code 1 อัตโนมัติเมื่อพบปัญหาระดับ `ERROR` สั่งบล็อก Pull Request ที่ไม่ผ่านมาตรฐานได้ทันที
+- 🚀 **CLI-First & Shift-Left:** สแกนโค้ดรวดเร็วปานสายฟ้าแลบบนเครื่องของ Developer ภายในเวลาไม่กี่มิลลิวินาที
+- 🪄 **Interactive Setup Wizard (`archguard init`):** คำถามภาษาอังกฤษ 100% ปรับแต่ง `archguard.yaml` ให้ตรงตามสเปกโปรเจกต์อัตโนมัติ (รองรับ **Frontend**, **Backend**, **Full-Stack App**, และ **Library**)
+- 🛡️ **Rich Built-in Policy Rules:**
+  - `file-naming`: ตรวจมาตรฐานการตั้งชื่อไฟล์และโฟลเดอร์ตาม Regex (รองรับวงเล็บ `[id]` ของ Next.js)
+  - `no-secrets`: สแกนหา AWS Access Keys, Private Keys, Bearer Tokens, และ Hardcoded Secrets
+  - `required-files`: ตรวจบังคับความมีอยู่ของไฟล์สำคัญประจำองค์กร (เช่น `README.md`, `.gitignore`)
+  - `openapi-exists`: ตรวจสอบความมีอยู่ของไฟล์เอกสารสัญญา API (OpenAPI/Swagger Spec)
+- 📜 **Built-in Policy Catalog (`archguard rules`):** เรียกดูรายชื่อกฎ พารามิเตอร์ และ Default Severity บน Terminal ได้ทันที
+- ⚓ **Git Pre-commit Hook Integration (`archguard install-hook`):** ติดตั้งระบบตรวจความถูกต้องอัตโนมัติก่อนสั่ง `git commit`
+- 📊 **Multi-Format Reporting:** รองรับ Colored Console, JSON (`--format=json`), และ **SARIF v2.1.0 (`--format=sarif`)** สำหรับแสดงผลบน **GitHub Security Alerts** และไฮไลต์บรรทัดโค้ดใน **Pull Request**
+- 📦 **Automated Cross-Platform Releases:** คอมไพล์ไฟล์ Binary สำเร็จรูปให้อัตโนมัติสำหรับ **Linux, macOS (Apple Silicon M1/M2/M3 & Intel), และ Windows**
 
 ---
 
 ## ⚡ Quick Start
 
-### 1. Build Executable Binary
+### 1. Installation
+
+#### Option A: Install via Go (Recommended for Developers)
 ```bash
-go build -o bin/archguard ./cmd/archguard
+go install github.com/jakkayy/archGuard/cmd/archguard@latest
 ```
 
-### 2. Initialize Configuration (`archguard.yaml`)
-สร้างไฟล์ตั้งค่ากฎคอนฟิกตั้งต้นในไดเรกทอรีโปรเจกต์:
+#### Option B: Download Pre-compiled Binary
+ดาวน์โหลดไฟล์สำเร็จรูปสำหรับ OS ของคุณจากหน้า [GitHub Releases](https://github.com/jakkayy/archGuard/releases/latest) แล้วนำไปวางไว้ใน System PATH
+
+---
+
+### 2. Initialize Project Configuration
+
+เปิด Terminal ในโฟลเดอร์โปรเจกต์ของคุณแล้วรันคำสั่ง Interactive Wizard:
 ```bash
-./bin/archguard init
+archguard init
 ```
 
-### 3. Run Policy Scan
-รันสแกนโปรเจกต์:
+---
+
+### 3. Install Git Pre-Commit Hook (Optional but Recommended)
+
+สั่งติดตั้งระบบตรวจสอบอัตโนมัติก่อนทำ `git commit` เพียงครั้งเดียว:
 ```bash
-./bin/archguard scan
+archguard install-hook
 ```
+
+---
+
+### 4. Run Policy Scan
+
+```bash
+archguard scan
+```
+
+---
+
+## 💻 CLI Command Reference
+
+| Command | Description | Flags |
+| :--- | :--- | :--- |
+| `archguard init` | เปิดหน้าต่าง Interactive Setup Wizard เพื่อสร้างไฟล์ `archguard.yaml` | `-f, --force` (เขียนทับไฟล์เดิม)<br>`-y, --non-interactive` (ข้ามคำถาม) |
+| `archguard scan` | สแกนโปรเจกต์เพื่อตรวจสอบข้อผิดพลาดตามกฎใน `archguard.yaml` | `-c, --config <file>` (ไฟล์คอนฟิก)<br>`-f, --format <console\|json\|sarif>`<br>`--no-color` |
+| `archguard rules` | แสดงรายการ Built-in Policy Rules ทั้งหมดพร้อมคำอธิบายและพารามิเตอร์ | N/A |
+| `archguard install-hook` | ติดตั้งระบบ Pre-commit Hook อัตโนมัติไว้ที่ `.git/hooks/pre-commit` | N/A |
 
 ---
 
 ## ⚙️ Configuration Reference (`archguard.yaml`)
 
-ตัวอย่างการตั้งค่าในไฟล์ `archguard.yaml`:
-
 ```yaml
 version: "v1"
+
+# ----------------------------------------------------
+# 📂 Ignore Directories (ข้ามโฟลเดอร์ที่ไม่ต้องการตรวจ)
+# ----------------------------------------------------
+ignore:
+  - "custom_build"
+  - "tmp"
+
+# ----------------------------------------------------
+# 🛡️ Engineering Policies Rules
+# ----------------------------------------------------
 rules:
-  # Rule 1: File Naming Convention Check
+  # 1. File Naming Policy
   file-naming:
     enabled: true
-    severity: WARNING         # Options: ERROR, WARNING, INFO
-    pattern: "^[a-z0-9._-]+$" # Regex rule for filename formatting
+    severity: WARNING
+    pattern: '^[a-zA-Z0-9._\-\[\]\(\)]+$'
 
-  # Rule 2: Required OpenAPI Spec File Check
-  openapi-exists:
+  # 2. Mandatory Files Check
+  required-files:
     enabled: true
-    severity: ERROR           # Fails scan if spec file is missing
-    path: "docs/archguard_bot_spec.md"
-```
+    severity: ERROR
+    files:
+      - "README.md"
+      - ".gitignore"
 
----
+  # 3. No Hardcoded Secrets Check
+  no-secrets:
+    enabled: true
+    severity: ERROR
 
-## 💻 CLI Commands & Options
-
-### `archguard init`
-สร้างไฟล์ `archguard.yaml` ตั้งต้น
-- `-f, --force`: บังคับเขียนทับไฟล์ `archguard.yaml` เดิมที่มีอยู่
-
-### `archguard scan`
-สแกนโปรเจกต์เพื่อตรวจสอบข้อผิดพลาด
-- `-c, --config <file>`: ระบุไฟล์คอนฟิก (Default: `archguard.yaml`)
-- `-f, --format <type>`: ระบุรูปแบบรายงาน (`console` หรือ `json`) (Default: `console`)
-- `--no-color`: ปิดการแสดงสีบน Terminal
-
-#### Example: Output as JSON
-```bash
-./bin/archguard scan --format=json
+  # 4. OpenAPI Specification Check
+  openapi-exists:
+    enabled: false
+    severity: ERROR
+    path: "docs/openapi.json"
 ```
 
 ---
 
 ## 🤖 CI/CD Integration (GitHub Actions)
 
-สร้างไฟล์ `.github/workflows/policy-check.yml`:
+สร้างไฟล์ `.github/workflows/policy-check.yml` ในโปรเจกต์งานของคุณ:
 
 ```yaml
 name: ArchGuard Engineering Policy Check
@@ -112,12 +153,24 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.26'
+          go-version: '1.22'
 
-      - name: Build & Run ArchGuard Scan
+      - name: Install ArchGuard Engine
+        run: go install github.com/jakkayy/archGuard/cmd/archguard@latest
+
+      - name: Run ArchGuard Policy Scan
+        run: archguard scan
+
+      - name: Generate & Upload SARIF Security Report
         run: |
-          go build -o bin/archguard ./cmd/archguard
-          ./bin/archguard scan
+          archguard scan --format=sarif > archguard-results.sarif
+        continue-on-error: true
+
+      - name: Upload SARIF to GitHub Security Tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: archguard-results.sarif
 ```
 
 ---
@@ -125,17 +178,19 @@ jobs:
 ## 🏗️ Project Architecture Layout
 
 ```
-archguard/
+archGuard/
+├── .github/
+│   └── workflows/            # GitHub Actions CI/CD & Automated Release Pipelines
 ├── cmd/
-│   └── archguard/            # CLI Commands (main, root, init, scan)
+│   └── archguard/            # CLI Commands (main, root, init, scan, rules, install-hook)
 ├── internal/                 # Internal Private Core
-│   ├── config/               # YAML Config Loader
-│   └── core/                 # Engine Orchestrator, Context & Result Types
+│   ├── config/               # YAML Config Loader (archguard.yaml)
+│   └── core/                 # Engine Orchestrator, Context & Issue Types
 ├── pkg/                      # Public SDK & Built-in Rules
-│   ├── rule/                 # Rule Interface & Built-in Implementations
-│   └── reporter/             # Console & JSON Formatter Reporters
+│   ├── rule/                 # Rules (file-naming, no-secrets, openapi-exists, required-files)
+│   └── reporter/             # Reporters (Console, JSON, SARIF)
 ├── docs/                     # Specifications & Documentation
-└── archguard.yaml            # Sample configuration file
+└── archguard.yaml            # Default sample configuration file
 ```
 
 ---
