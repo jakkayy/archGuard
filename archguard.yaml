@@ -8,4 +8,4 @@ rules:
   openapi-exists:
     enabled: true
     severity: ERROR
-    path: "docs/archguard_bot_spec.md"
+    path: "docs/openapi.json"
