@@ -29,6 +29,15 @@ func (e *Engine) RegisterRule(r Rule) {
 	}
 }
 
+// Rules returns a slice of all registered rules in the engine.
+func (e *Engine) Rules() []Rule {
+	var list []Rule
+	for _, r := range e.rules {
+		list = append(list, r)
+	}
+	return list
+}
+
 // Run executes all active rules enabled in Config against the target working directory.
 func (e *Engine) Run(ctx context.Context, workingDir string, cfg *config.Config) (*ScanResult, error) {
 	startTime := time.Now()
