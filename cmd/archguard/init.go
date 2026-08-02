@@ -41,6 +41,7 @@ var initCmd = &cobra.Command{
 		catChoices := []string{
 			"Frontend / Web App (e.g., Next.js, React, Vue, Svelte)",
 			"Backend REST API (e.g., Go, Node.js, Python, Spring Boot)",
+			"Full-Stack App (Frontend + Backend in single repository)",
 			"Library / CLI Tool (Reusable package or command-line utility)",
 		}
 		catSelect := selection.New("Select your project category:", catChoices)
@@ -50,9 +51,10 @@ var initCmd = &cobra.Command{
 		}
 
 		var selectedFramework string
-		var isBackend bool
+		var isFrontend, isBackend, isFullStack bool
 
 		if strings.HasPrefix(selectedCat, "Frontend") {
+			isFrontend = true
 			fwChoices := []string{
 				"Next.js (App Router / Pages)",
 				"React / Vite / Vue / Nuxt / Svelte",
@@ -76,6 +78,35 @@ var initCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("setup cancelled: %w", err)
 			}
+		} else if strings.HasPrefix(selectedCat, "Full-Stack") {
+			isFullStack = true
+			isFrontend = true
+			isBackend = true
+
+			fwChoicesFrontend := []string{
+				"Next.js (App Router / Pages)",
+				"React / Vite / Vue / Svelte",
+				"Other / Generic HTML",
+			}
+			fwSelectFE := selection.New("Select your Frontend Framework:", fwChoicesFrontend)
+			selectedFE, err := fwSelectFE.RunPrompt()
+			if err != nil {
+				return fmt.Errorf("setup cancelled: %w", err)
+			}
+
+			fwChoicesBackend := []string{
+				"Go (Gin / Fiber / Echo / Standard)",
+				"Node.js (NestJS / Express)",
+				"Python (FastAPI / Django / Flask)",
+				"Java / Kotlin (Spring Boot)",
+			}
+			fwSelectBE := selection.New("Select your Backend Framework:", fwChoicesBackend)
+			selectedBE, err := fwSelectBE.RunPrompt()
+			if err != nil {
+				return fmt.Errorf("setup cancelled: %w", err)
+			}
+
+			selectedFramework = fmt.Sprintf("%s + %s", selectedFE, selectedBE)
 		} else {
 			fwChoices := []string{
 				"Go",
@@ -89,7 +120,7 @@ var initCmd = &cobra.Command{
 			}
 		}
 
-		// Question 3: OpenAPI Specification Check (Only for Backend)
+		// Question 3: OpenAPI Specification Check (Only for Backend or Full-Stack)
 		openAPIEnabled := false
 		openAPIPath := "docs/openapi.json"
 
@@ -98,7 +129,7 @@ var initCmd = &cobra.Command{
 				"Yes - Require spec file (Triggers 🚨 ERROR if missing)",
 				"No  - Disable OpenAPI check for now",
 			}
-			openAPISelect := selection.New("Require an OpenAPI / Swagger spec file check?", openAPIChoices)
+			openAPISelect := selection.New("Require an OpenAPI / Swagger spec file check for Backend API?", openAPIChoices)
 			selectedOpenAPI, err := openAPISelect.RunPrompt()
 			if err != nil {
 				return fmt.Errorf("setup cancelled: %w", err)
@@ -118,7 +149,7 @@ var initCmd = &cobra.Command{
 		// Question 4: File Naming Policy
 		namingChoices := []string{
 			"Strict Lowercase (a-z, 0-9, . _ -)      [Recommended for Go / Backend]",
-			"Flexible Framework (Include A-Z, [ ] ()) [Recommended for Next.js / React]",
+			"Flexible Framework (Include A-Z, [ ] ()) [Recommended for Next.js / React / Full-Stack]",
 			"Disabled           (Do not enforce file naming convention)",
 		}
 
@@ -131,10 +162,16 @@ var initCmd = &cobra.Command{
 		namingEnabled := true
 		namingPattern := "^[a-z0-9._-]+$"
 
-		if strings.HasPrefix(selectedNaming, "Flexible") {
-			namingPattern = "^[a-zA-Z0-9._\\-\\[\\]\\(\\)]+$"
-		} else if strings.HasPrefix(selectedNaming, "Disabled") {
+		if strings.HasPrefix(selectedNaming, "Flexible") || isFrontend || isFullStack {
+			if !strings.HasPrefix(selectedNaming, "Disabled") && !strings.HasPrefix(selectedNaming, "Strict") {
+				namingPattern = "^[a-zA-Z0-9._\\-\\[\\]\\(\\)]+$"
+			}
+		}
+
+		if strings.HasPrefix(selectedNaming, "Disabled") {
 			namingEnabled = false
+		} else if strings.HasPrefix(selectedNaming, "Flexible") {
+			namingPattern = "^[a-zA-Z0-9._\\-\\[\\]\\(\\)]+$"
 		}
 
 		// Construct archguard.yaml content
