@@ -1,0 +1,45 @@
+name: ArchGuard CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test-and-scan:
+    name: Test & Quality Inspection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go Environment
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: Verify Go Code Formatting & Vet
+        run: |
+          gofmt -s -l .
+          go vet ./...
+
+      - name: Run Unit Tests
+        run: go test -v ./...
+
+      - name: Build ArchGuard Executable Binary
+        run: go build -o bin/archguard ./cmd/archguard
+
+      - name: Self-Scan with ArchGuard (Dogfooding)
+        run: ./bin/archguard scan
+
+      - name: Generate SARIF Security & Policy Report
+        run: ./bin/archguard scan --format=sarif > archguard-results.sarif
+        continue-on-error: true
+
+      - name: Upload SARIF Report to GitHub Security Tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: archguard-results.sarif
