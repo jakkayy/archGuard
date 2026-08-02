@@ -1,11 +1,24 @@
 version: "v1"
+
+# ----------------------------------------------------
+# 📂 Ignore Directories (ข้ามโฟลเดอร์ที่ไม่ต้องการตรวจ)
+# ----------------------------------------------------
+# ignore:
+#   - "custom_build"
+#   - "tmp"
+
+# ----------------------------------------------------
+# 🛡️ Engineering Policies Rules
+# ----------------------------------------------------
 rules:
+  # 1. File Naming Policy (เปิดไว้เป็นค่าเริ่มต้นสำหรับทุกโปรเจกต์)
   file-naming:
     enabled: true
     severity: WARNING
-    pattern: "^[a-z0-9._-]+$"
+    pattern: "^[a-zA-Z0-9._-]+$"
 
+  # 2. OpenAPI Spec Policy (เปิดเป็น true เฉพาะโปรเจกต์ที่เป็น REST API Service)
   openapi-exists:
-    enabled: true
+    enabled: false
     severity: ERROR
-    path: "docs/archguard_bot_spec.md"
+    path: "docs/openapi.json"
