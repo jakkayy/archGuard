@@ -62,10 +62,16 @@ description: Enforces Clean Code guidelines, idiomatic Go naming conventions (Ef
 
 ## 🏗️ 2. สถาปัตยกรรม & Clean Code Principles (SOLID)
 
-### 2.1 Package Organization (Standard Go Layout)
-- `cmd/`: มีหน้าที่เพียง parse CLI arguments/flags และประสานงานเรียกใช้ package ภายใน ห้ามใส่ Business Logic ไว้ใน `cmd/`
-- `internal/`: เก็บ Core Domain Logic และ Scanner Engine ภายในโปรเจกต์
-- แต่ละ Package ต้องมีขอบเขตความรับผิดชอบเดียว (**Single Responsibility Principle**)
+### 2.1 Package & Folder Organization (Clean Directory Structure)
+- **Standard Go Project Layout:**
+  - `cmd/`: มีหน้าที่เพียง parse CLI arguments/flags และประสานงานเรียกใช้ package ภายใน ห้ามใส่ Business Logic ไว้ใน `cmd/`
+  - `internal/`: เก็บ Core Domain Logic และ Scanner Engine ภายในโปรเจกต์ (Compiler enforced)
+  - `pkg/`: เก็บ Reusable Packages, Rules, และ Public SDK
+- **การจัดโครงสร้างโฟลเดอร์ให้เป็นระเบียบ และง่ายต่อการค้นหา/แก้ไข (Organized & Maintainable Structure):**
+  - **Modular & Domain-based Grouping:** แยกโฟลเดอร์และไฟล์ตามหน้าที่ชัดเจน (High Cohesion, Low Coupling) เมื่อ Rule เพิ่มขึ้น ให้จัดกลุ่ม sub-package ตามประเภท เช่น `pkg/rule/naming/`, `pkg/rule/api/`, `pkg/rule/arch/` เพื่อให้อ่านและค้นหาง่าย
+  - **Co-located Tests:** ไฟล์ Unit Test (`*_test.go`) ต้องวางคู่กับไฟล์ Source Code ที่มันทดสอบเสมอ (เช่น `config.go` คู่กับ `config_test.go`) เพื่อให้ค้นหา แก้ไข และดูแลควบคู่กันได้ทันที
+  - **Explicit File Naming (`snake_case`):** ชื่อไฟล์ต้องสื่อถึง Responsibility ภายในชัดเจน ใช้ `snake_case` (เช่น `openapi_exists.go`, `file_naming.go`) และห้ามตั้งชื่อไฟล์กำกวม เช่น `misc.go` หรือ `stuff.go`
+- **Single Responsibility Principle:** แต่ละ Package และโฟลเดอร์ต้องมีขอบเขตความรับผิดชอบเดียว
 
 ### 2.2 Interface & Dependency Inversion
 - **Accept Interfaces, Return Structs:** ฟังก์ชันหรือ Constructor ควรรับพารามิเตอร์เป็น Interface และส่งคืน Concrete Struct (`*Struct`)
