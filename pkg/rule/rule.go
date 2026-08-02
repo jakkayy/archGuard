@@ -2,20 +2,5 @@ package rule
 
 import "github.com/archguard/archguard/internal/core"
 
-// Rule defines the standard interface contract that all policy inspection rules must implement.
-type Rule interface {
-	// ID returns the unique identifier of the rule (e.g., "naming/file-convention").
-	ID() string
-
-	// Name returns the human-readable name of the rule.
-	Name() string
-
-	// Description returns a concise explanation of what the rule validates.
-	Description() string
-
-	// Severity returns the default severity level assigned to issues found by this rule.
-	Severity() core.Severity
-
-	// Run executes the rule against the provided scan context and returns detected issues.
-	Run(ctx *core.ScanContext) ([]core.Issue, error)
-}
+// Rule defines the standard interface contract for policy inspection rules.
+type Rule = core.Rule

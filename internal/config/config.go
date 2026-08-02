@@ -5,14 +5,12 @@ import (
 	"os"
 
 	"gopkg.in/yaml.v3"
-
-	"github.com/archguard/archguard/internal/core"
 )
 
 // RuleConfig represents the configuration settings for an individual rule.
 type RuleConfig struct {
 	Enabled  bool           `yaml:"enabled"`
-	Severity core.Severity  `yaml:"severity,omitempty"`
+	Severity string         `yaml:"severity,omitempty"`
 	Params   map[string]any `yaml:",inline"`
 }
 

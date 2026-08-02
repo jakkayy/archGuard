@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/archguard/archguard/internal/config"
-	"github.com/archguard/archguard/internal/core"
 )
 
 func TestLoad_Success(t *testing.T) {
@@ -43,7 +42,7 @@ rules:
 		t.Error("expected rule to be enabled")
 	}
 
-	if ruleCfg.Severity != core.SeverityWarning {
+	if ruleCfg.Severity != "WARNING" {
 		t.Errorf("expected severity WARNING, got: %s", ruleCfg.Severity)
 	}
 }
