@@ -23,6 +23,8 @@ var rulesCmd = &cobra.Command{
 			engine.RegisterRule(fileNaming)
 		}
 		engine.RegisterRule(rule.NewOpenAPIExistsRule("", core.SeverityError))
+		engine.RegisterRule(rule.NewRequiredFilesRule([]string{"README.md"}, core.SeverityError))
+		engine.RegisterRule(rule.NewNoSecretsRule(core.SeverityError))
 
 		rules := engine.Rules()
 		sort.Slice(rules, func(i, j int) bool {
@@ -57,6 +59,10 @@ var rulesCmd = &cobra.Command{
 				fmt.Printf("   • Parameters:       %s (string, regex pattern)\n", bold("pattern"))
 			case "openapi-exists":
 				fmt.Printf("   • Parameters:       %s (string, target file path)\n", bold("path"))
+			case "required-files":
+				fmt.Printf("   • Parameters:       %s (array of strings, e.g., ['README.md', '.gitignore'])\n", bold("files"))
+			case "no-secrets":
+				fmt.Printf("   • Parameters:       (None required)\n")
 			}
 			fmt.Println()
 		}
