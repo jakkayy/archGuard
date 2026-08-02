@@ -70,7 +70,7 @@ func NewSARIFReporter() *SARIFReporter {
 
 // Report serializes ScanResult into SARIF v2.1.0 JSON and writes to the provided Writer.
 func (r *SARIFReporter) Report(w io.Writer, res *core.ScanResult) error {
-	var results []SARIFResult
+	results := make([]SARIFResult, 0)
 
 	for _, issue := range res.Issues {
 		level := "note"
