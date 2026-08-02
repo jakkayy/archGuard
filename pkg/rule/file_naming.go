@@ -21,7 +21,7 @@ type FileNamingRule struct {
 // NewFileNamingRule initializes a FileNamingRule with a regex pattern and default severity.
 func NewFileNamingRule(patternStr string, severity core.Severity) (*FileNamingRule, error) {
 	if patternStr == "" {
-		patternStr = `^[a-z0-9_\-\.]+$`
+		patternStr = `^[a-z0-9._-]+$`
 	}
 	if severity == "" {
 		severity = core.SeverityWarning
@@ -33,7 +33,7 @@ func NewFileNamingRule(patternStr string, severity core.Severity) (*FileNamingRu
 	}
 
 	return &FileNamingRule{
-		id:          "naming/file-convention",
+		id:          "file-naming",
 		name:        "File Naming Convention",
 		description: "Validates that project filenames conform to the specified regex pattern",
 		severity:    severity,

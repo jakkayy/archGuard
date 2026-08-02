@@ -45,6 +45,11 @@ rules:
 	if ruleCfg.Severity != "WARNING" {
 		t.Errorf("expected severity WARNING, got: %s", ruleCfg.Severity)
 	}
+
+	pattern, ok := ruleCfg.Params["pattern"].(string)
+	if !ok || pattern == "" {
+		t.Errorf("expected pattern in Params, got: %v", ruleCfg.Params)
+	}
 }
 
 func TestLoad_FileNotFound(t *testing.T) {

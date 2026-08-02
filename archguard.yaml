@@ -3,9 +3,9 @@ rules:
   file-naming:
     enabled: true
     severity: WARNING
-    pattern: "^[a-z0-9_\\-\\.]+$"
+    pattern: "^[a-z0-9._-]+$"
 
   openapi-exists:
     enabled: true
     severity: ERROR
-    path: "docs/openapi.json"
+    path: "docs/archguard_bot_spec.md"

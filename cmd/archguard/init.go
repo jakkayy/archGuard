@@ -28,12 +28,12 @@ rules:
   file-naming:
     enabled: true
     severity: WARNING
-    pattern: "^[a-z0-9_\\-\\.]+$"
+    pattern: "^[a-z0-9._-]+$"
 
   openapi-exists:
     enabled: true
     severity: ERROR
-    path: "docs/openapi.json"
+    path: "docs/archguard_bot_spec.md"
 `
 		if err := os.WriteFile(filename, []byte(defaultContent), 0644); err != nil {
 			return fmt.Errorf("failed to write %s: %w", filename, err)

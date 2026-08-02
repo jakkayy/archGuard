@@ -27,7 +27,7 @@ func NewOpenAPIExistsRule(targetPath string, severity core.Severity) *OpenAPIExi
 	}
 
 	return &OpenAPIExistsRule{
-		id:          "api/openapi-exists",
+		id:          "openapi-exists",
 		name:        "OpenAPI Spec Existence Check",
 		description: "Validates that the required OpenAPI specification file exists in the workspace",
 		severity:    severity,

@@ -14,6 +14,33 @@ type RuleConfig struct {
 	Params   map[string]any `yaml:",inline"`
 }
 
+// UnmarshalYAML implements custom YAML unmarshaling for RuleConfig to capture extra rule parameters.
+func (r *RuleConfig) UnmarshalYAML(value *yaml.Node) error {
+	type rawConfig struct {
+		Enabled  bool   `yaml:"enabled"`
+		Severity string `yaml:"severity"`
+	}
+
+	var raw rawConfig
+	if err := value.Decode(&raw); err != nil {
+		return err
+	}
+
+	r.Enabled = raw.Enabled
+	r.Severity = raw.Severity
+
+	var fullMap map[string]any
+	if err := value.Decode(&fullMap); err != nil {
+		return err
+	}
+
+	delete(fullMap, "enabled")
+	delete(fullMap, "severity")
+	r.Params = fullMap
+
+	return nil
+}
+
 // Config represents the root configuration structure loaded from archguard.yaml.
 type Config struct {
 	Version string                `yaml:"version"`

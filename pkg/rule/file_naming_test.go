@@ -8,7 +8,7 @@ import (
 )
 
 func TestFileNamingRule_ValidFiles(t *testing.T) {
-	r, err := rule.NewFileNamingRule(`^[a-z0-9_\-\.]+$`, core.SeverityWarning)
+	r, err := rule.NewFileNamingRule(`^[a-z0-9._-]+$`, core.SeverityWarning)
 	if err != nil {
 		t.Fatalf("failed to create rule: %v", err)
 	}
@@ -30,7 +30,7 @@ func TestFileNamingRule_ValidFiles(t *testing.T) {
 }
 
 func TestFileNamingRule_InvalidFiles(t *testing.T) {
-	r, err := rule.NewFileNamingRule(`^[a-z0-9_\-\.]+$`, core.SeverityWarning)
+	r, err := rule.NewFileNamingRule(`^[a-z0-9._-]+$`, core.SeverityWarning)
 	if err != nil {
 		t.Fatalf("failed to create rule: %v", err)
 	}
