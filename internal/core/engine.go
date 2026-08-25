@@ -29,6 +29,15 @@ func (e *Engine) RegisterRule(r Rule) {
 	}
 }
 
+// Rules returns a slice of all registered rules in the engine.
+func (e *Engine) Rules() []Rule {
+	var list []Rule
+	for _, r := range e.rules {
+		list = append(list, r)
+	}
+	return list
+}
+
 // Run executes all active rules enabled in Config against the target working directory.
 func (e *Engine) Run(ctx context.Context, workingDir string, cfg *config.Config) (*ScanResult, error) {
 	startTime := time.Now()
@@ -42,7 +51,12 @@ func (e *Engine) Run(ctx context.Context, workingDir string, cfg *config.Config)
 		return nil, fmt.Errorf("failed to get absolute path for working directory %s: %w", workingDir, err)
 	}
 
-	files, err := e.collectFiles(absWorkingDir)
+	var customIgnores []string
+	if cfg != nil {
+		customIgnores = cfg.Ignore
+	}
+
+	files, err := e.collectFiles(absWorkingDir, customIgnores)
 	if err != nil {
 		return nil, fmt.Errorf("failed to collect project files in %s: %w", absWorkingDir, err)
 	}
@@ -86,14 +100,41 @@ func (e *Engine) Run(ctx context.Context, workingDir string, cfg *config.Config)
 	return result, nil
 }
 
-func (e *Engine) collectFiles(rootDir string) ([]string, error) {
+func (e *Engine) collectFiles(rootDir string, customIgnores []string) ([]string, error) {
 	var files []string
 
 	ignoredDirs := map[string]bool{
-		".git":         true,
-		"node_modules": true,
-		"vendor":       true,
-		"bin":          true,
+		".git":          true,
+		"node_modules":  true,
+		"vendor":        true,
+		"bin":           true,
+		".next":         true,
+		".nuxt":         true,
+		".svelte-kit":   true,
+		"dist":          true,
+		"build":         true,
+		"out":           true,
+		".output":       true,
+		"coverage":      true,
+		".cache":        true,
+		".turbo":        true,
+		"__pycache__":   true,
+		".pytest_cache": true,
+		".venv":         true,
+		"venv":          true,
+		"env":           true,
+		".mypy_cache":   true,
+		"target":        true,
+		".gradle":       true,
+		".dart_tool":    true,
+		".idea":         true,
+		".vscode":       true,
+	}
+
+	for _, customDir := range customIgnores {
+		if customDir != "" {
+			ignoredDirs[customDir] = true
+		}
 	}
 
 	err := filepath.WalkDir(rootDir, func(path string, d os.DirEntry, err error) error {

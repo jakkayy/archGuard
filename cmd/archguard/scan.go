@@ -46,6 +46,22 @@ var scanCmd = &cobra.Command{
 			eng.RegisterRule(openAPIRule)
 		}
 
+		if reqFilesCfg, ok := cfg.Rules["required-files"]; ok {
+			var filesList []string
+			if rawFiles, exists := reqFilesCfg.Params["files"].([]any); exists {
+				for _, f := range rawFiles {
+					if str, isStr := f.(string); isStr {
+						filesList = append(filesList, str)
+					}
+				}
+			}
+			eng.RegisterRule(rule.NewRequiredFilesRule(filesList, core.Severity(reqFilesCfg.Severity)))
+		}
+
+		if noSecretsCfg, ok := cfg.Rules["no-secrets"]; ok {
+			eng.RegisterRule(rule.NewNoSecretsRule(core.Severity(noSecretsCfg.Severity)))
+		}
+
 		res, err := eng.Run(cmd.Context(), ".", cfg)
 		if err != nil {
 			return fmt.Errorf("scan execution error: %w", err)
@@ -55,6 +71,8 @@ var scanCmd = &cobra.Command{
 		switch formatFlag {
 		case "json":
 			rep = reporter.NewJSONReporter()
+		case "sarif":
+			rep = reporter.NewSARIFReporter()
 		default:
 			rep = reporter.NewConsoleReporter(noColor)
 		}
@@ -73,7 +91,7 @@ var scanCmd = &cobra.Command{
 
 func init() {
 	scanCmd.Flags().StringVarP(&configPath, "config", "c", "archguard.yaml", "Path to archguard.yaml configuration file")
-	scanCmd.Flags().StringVarP(&formatFlag, "format", "f", "console", "Report format (console, json)")
+	scanCmd.Flags().StringVarP(&formatFlag, "format", "f", "console", "Report format (console, json, sarif)")
 	scanCmd.Flags().BoolVar(&noColor, "no-color", false, "Disable colored terminal output")
 
 	rootCmd.AddCommand(scanCmd)
