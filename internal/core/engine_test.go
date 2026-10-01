@@ -131,3 +131,16 @@ func TestEngine_Run_IssuesAreSortedDeterministically(t *testing.T) {
 		}
 	}
 }
+
+func TestEngine_Run_StopsWhenContextCancelled(t *testing.T) {
+	eng := core.NewEngine()
+	eng.RegisterRule(&mockRule{id: "rule-a", severity: core.SeverityError})
+	cfg := &config.Config{Rules: map[string]config.RuleConfig{"rule-a": {Enabled: true}}}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	if _, err := eng.Run(ctx, t.TempDir(), cfg); err == nil {
+		t.Fatal("expected error for cancelled context, got nil")
+	}
+}

@@ -1,6 +1,8 @@
 package rule_test
 
 import (
+	"context"
+	"strings"
 	"testing"
 
 	"github.com/jakkayy/archGuard/internal/core"
@@ -51,5 +53,22 @@ func TestFileNamingRule_InvalidFiles(t *testing.T) {
 
 	if issues[0].Severity != core.SeverityWarning {
 		t.Errorf("expected severity WARNING, got %s", issues[0].Severity)
+	}
+}
+
+func TestFileNamingRule_SuggestionReflectsCustomPattern(t *testing.T) {
+	r, err := rule.NewFileNamingRule(`^[A-Z][a-zA-Z]+\.tsx$`, core.SeverityWarning)
+	if err != nil {
+		t.Fatal(err)
+	}
+	issues, err := r.Run(core.NewScanContext(context.Background(), t.TempDir(), []string{"components/button.tsx"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(issues) != 1 {
+		t.Fatalf("expected 1 issue, got %d", len(issues))
+	}
+	if !strings.Contains(issues[0].Suggestion, `^[A-Z][a-zA-Z]+\.tsx$`) {
+		t.Errorf("expected suggestion to mention the configured pattern, got %q", issues[0].Suggestion)
 	}
 }

@@ -79,7 +79,7 @@ func (r *FileNamingRule) Run(ctx *core.ScanContext) ([]core.Issue, error) {
 				FilePath:   relPath,
 				Message:    fmt.Sprintf("filename '%s' does not match pattern '%s'", baseName, r.pattern.String()),
 				Severity:   r.severity,
-				Suggestion: "Rename file using lowercase alphanumeric characters, underscores, or hyphens",
+				Suggestion: fmt.Sprintf("Rename the file so its name matches the configured pattern %s", r.pattern.String()),
 			})
 		}
 	}

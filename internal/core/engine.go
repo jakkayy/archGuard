@@ -84,6 +84,10 @@ func (e *Engine) Run(ctx context.Context, workingDir string, cfg *config.Config)
 				continue
 			}
 
+			if err := scanCtx.Ctx.Err(); err != nil {
+				return nil, fmt.Errorf("scan cancelled: %w", err)
+			}
+
 			issues, err := r.Run(scanCtx)
 			if err != nil {
 				return nil, fmt.Errorf("failed executing rule %s: %w", ruleID, err)
