@@ -96,11 +96,14 @@ archguard scan
 version: "v1"
 
 # ----------------------------------------------------
-# 📂 Ignore Directories (ข้ามโฟลเดอร์ที่ไม่ต้องการตรวจ)
+# 📂 Ignore Paths (ข้ามไฟล์/โฟลเดอร์ที่ไม่ต้องการตรวจ)
+#   - ไม่มี "/"  → match ชื่อโฟลเดอร์/ไฟล์ที่ระดับไหนก็ได้ (รองรับ glob)
+#   - มี "/"    → อ้างอิงจาก root ของโปรเจกต์
 # ----------------------------------------------------
 ignore:
-  - "custom_build"
-  - "tmp"
+  - "tmp"              # tmp/ ทุกระดับ
+  - "*.gen.go"         # ไฟล์ generated
+  - "docs/generated"   # เฉพาะ docs/generated ที่ root
 
 # ----------------------------------------------------
 # 🛡️ Engineering Policies Rules
@@ -131,6 +134,13 @@ rules:
     severity: ERROR
     path: "docs/openapi.json"
 ```
+
+> **File discovery:** ถ้ารันใน Git repository ArchGuard จะใช้ `git ls-files` จึงเคารพ `.gitignore` อัตโนมัติ
+> และข้ามโฟลเดอร์ cache/tooling (`node_modules`, `.next`, `__pycache__`, ...) ทุกระดับ
+> ส่วนโฟลเดอร์ build output (`bin`, `dist`, `build`, `vendor`, `target`, ...) จะถูกข้ามเฉพาะที่ root เท่านั้น
+>
+> **Severity:** รับ `ERROR`, `WARNING` (หรือ `WARN`), `INFO` แบบไม่สนตัวพิมพ์เล็ก/ใหญ่ ค่าอื่นจะ error ทันที
+> และชื่อ rule ที่สะกดผิดจะถูกแจ้งพร้อมคำแนะนำ (did you mean ...?)
 
 ---
 

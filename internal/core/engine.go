@@ -3,7 +3,6 @@ package core
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"sort"
 	"time"
@@ -58,7 +57,7 @@ func (e *Engine) Run(ctx context.Context, workingDir string, cfg *config.Config)
 		customIgnores = cfg.Ignore
 	}
 
-	files, err := e.collectFiles(absWorkingDir, customIgnores)
+	files, err := collectFiles(ctx, absWorkingDir, customIgnores)
 	if err != nil {
 		return nil, fmt.Errorf("failed to collect project files in %s: %w", absWorkingDir, err)
 	}
@@ -156,69 +155,4 @@ func levenshtein(a, b string) int {
 		prev = cur
 	}
 	return prev[len(b)]
-}
-
-func (e *Engine) collectFiles(rootDir string, customIgnores []string) ([]string, error) {
-	var files []string
-
-	ignoredDirs := map[string]bool{
-		".git":          true,
-		"node_modules":  true,
-		"vendor":        true,
-		"bin":           true,
-		".next":         true,
-		".nuxt":         true,
-		".svelte-kit":   true,
-		"dist":          true,
-		"build":         true,
-		"out":           true,
-		".output":       true,
-		"coverage":      true,
-		".cache":        true,
-		".turbo":        true,
-		"__pycache__":   true,
-		".pytest_cache": true,
-		".venv":         true,
-		"venv":          true,
-		"env":           true,
-		".mypy_cache":   true,
-		"target":        true,
-		".gradle":       true,
-		".dart_tool":    true,
-		".idea":         true,
-		".vscode":       true,
-	}
-
-	for _, customDir := range customIgnores {
-		if customDir != "" {
-			ignoredDirs[customDir] = true
-		}
-	}
-
-	err := filepath.WalkDir(rootDir, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		relPath, err := filepath.Rel(rootDir, path)
-		if err != nil {
-			return err
-		}
-
-		if d.IsDir() {
-			if ignoredDirs[d.Name()] && relPath != "." {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-
-		files = append(files, relPath)
-		return nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return files, nil
 }
