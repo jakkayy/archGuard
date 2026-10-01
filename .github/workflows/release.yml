@@ -24,25 +24,26 @@ jobs:
       - name: Build Binaries for Cross Platforms
         run: |
           mkdir -p dist
+          LDFLAGS="-s -w -X main.version=${GITHUB_REF_NAME}"
           
           # Linux amd64
-          GOOS=linux GOARCH=amd64 go build -o dist/archguard-linux-amd64 ./cmd/archguard
+          GOOS=linux GOARCH=amd64 go build -ldflags "$LDFLAGS" -o dist/archguard-linux-amd64 ./cmd/archguard
           tar -czvf dist/archguard-linux-amd64.tar.gz -C dist archguard-linux-amd64
 
           # Linux arm64
-          GOOS=linux GOARCH=arm64 go build -o dist/archguard-linux-arm64 ./cmd/archguard
+          GOOS=linux GOARCH=arm64 go build -ldflags "$LDFLAGS" -o dist/archguard-linux-arm64 ./cmd/archguard
           tar -czvf dist/archguard-linux-arm64.tar.gz -C dist archguard-linux-arm64
 
           # macOS amd64 (Intel)
-          GOOS=darwin GOARCH=amd64 go build -o dist/archguard-darwin-amd64 ./cmd/archguard
+          GOOS=darwin GOARCH=amd64 go build -ldflags "$LDFLAGS" -o dist/archguard-darwin-amd64 ./cmd/archguard
           tar -czvf dist/archguard-darwin-amd64.tar.gz -C dist archguard-darwin-amd64
 
           # macOS arm64 (Apple Silicon M1/M2/M3)
-          GOOS=darwin GOARCH=arm64 go build -o dist/archguard-darwin-arm64 ./cmd/archguard
+          GOOS=darwin GOARCH=arm64 go build -ldflags "$LDFLAGS" -o dist/archguard-darwin-arm64 ./cmd/archguard
           tar -czvf dist/archguard-darwin-arm64.tar.gz -C dist archguard-darwin-arm64
 
           # Windows amd64
-          GOOS=windows GOARCH=amd64 go build -o dist/archguard-windows-amd64.exe ./cmd/archguard
+          GOOS=windows GOARCH=amd64 go build -ldflags "$LDFLAGS" -o dist/archguard-windows-amd64.exe ./cmd/archguard
           zip -j dist/archguard-windows-amd64.zip dist/archguard-windows-amd64.exe
 
       - name: Create GitHub Release and Upload Assets
