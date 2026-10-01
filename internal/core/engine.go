@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 
 	"github.com/jakkayy/archGuard/internal/config"
@@ -29,12 +30,13 @@ func (e *Engine) RegisterRule(r Rule) {
 	}
 }
 
-// Rules returns a slice of all registered rules in the engine.
+// Rules returns all registered rules sorted by ID.
 func (e *Engine) Rules() []Rule {
-	var list []Rule
+	list := make([]Rule, 0, len(e.rules))
 	for _, r := range e.rules {
 		list = append(list, r)
 	}
+	sort.Slice(list, func(i, j int) bool { return list[i].ID() < list[j].ID() })
 	return list
 }
 
@@ -66,7 +68,14 @@ func (e *Engine) Run(ctx context.Context, workingDir string, cfg *config.Config)
 	var allIssues []Issue
 
 	if cfg != nil {
-		for ruleID, ruleCfg := range cfg.Rules {
+		ruleIDs := make([]string, 0, len(cfg.Rules))
+		for id := range cfg.Rules {
+			ruleIDs = append(ruleIDs, id)
+		}
+		sort.Strings(ruleIDs)
+
+		for _, ruleID := range ruleIDs {
+			ruleCfg := cfg.Rules[ruleID]
 			r, ok := e.rules[ruleID]
 			if !ok {
 				return nil, e.unknownRuleError(ruleID)
@@ -85,6 +94,8 @@ func (e *Engine) Run(ctx context.Context, workingDir string, cfg *config.Config)
 		}
 	}
 
+	sortIssues(allIssues)
+
 	scanDuration := time.Since(startTime).Milliseconds()
 
 	result := &ScanResult{
@@ -98,6 +109,20 @@ func (e *Engine) Run(ctx context.Context, workingDir string, cfg *config.Config)
 	}
 
 	return result, nil
+}
+
+// sortIssues orders issues by file, line, then rule so output is stable across runs.
+func sortIssues(issues []Issue) {
+	sort.SliceStable(issues, func(i, j int) bool {
+		a, b := issues[i], issues[j]
+		if a.FilePath != b.FilePath {
+			return a.FilePath < b.FilePath
+		}
+		if a.Line != b.Line {
+			return a.Line < b.Line
+		}
+		return a.RuleID < b.RuleID
+	})
 }
 
 func (e *Engine) unknownRuleError(ruleID string) error {

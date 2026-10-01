@@ -2,6 +2,7 @@ package core_test
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -97,5 +98,36 @@ func TestEngine_Run_UnknownDisabledRuleStillErrors(t *testing.T) {
 	}
 	if _, err := eng.Run(context.Background(), t.TempDir(), cfg); err == nil {
 		t.Fatal("expected error for unknown rule even when disabled, got nil")
+	}
+}
+
+func TestEngine_Run_IssuesAreSortedDeterministically(t *testing.T) {
+	eng := core.NewEngine()
+	eng.RegisterRule(&mockRule{id: "rule-b", severity: core.SeverityWarning, issues: []core.Issue{
+		{RuleID: "rule-b", FilePath: "b.go", Line: 2, Severity: core.SeverityWarning},
+		{RuleID: "rule-b", FilePath: "a.go", Line: 9, Severity: core.SeverityWarning},
+	}})
+	eng.RegisterRule(&mockRule{id: "rule-a", severity: core.SeverityWarning, issues: []core.Issue{
+		{RuleID: "rule-a", FilePath: "b.go", Line: 2, Severity: core.SeverityWarning},
+		{RuleID: "rule-a", FilePath: "a.go", Line: 1, Severity: core.SeverityWarning},
+	}})
+
+	cfg := &config.Config{Rules: map[string]config.RuleConfig{
+		"rule-a": {Enabled: true},
+		"rule-b": {Enabled: true},
+	}}
+
+	want := []string{"a.go:1:rule-a", "a.go:9:rule-b", "b.go:2:rule-a", "b.go:2:rule-b"}
+	for i := 0; i < 20; i++ {
+		res, err := eng.Run(context.Background(), t.TempDir(), cfg)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		for j, issue := range res.Issues {
+			got := fmt.Sprintf("%s:%d:%s", issue.FilePath, issue.Line, issue.RuleID)
+			if got != want[j] {
+				t.Fatalf("run %d: issue %d = %s, want %s", i, j, got, want[j])
+			}
+		}
 	}
 }
