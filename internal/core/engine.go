@@ -65,7 +65,7 @@ func (e *Engine) Run(ctx context.Context, workingDir string, cfg *config.Config)
 
 	scanCtx := policy.NewScanContext(ctx, absWorkingDir, files)
 
-	var allIssues []policy.Issue
+	allIssues := []policy.Issue{}
 
 	if cfg != nil {
 		ruleIDs := make([]string, 0, len(cfg.Rules))
