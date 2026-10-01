@@ -43,7 +43,7 @@ var scanCmd = &cobra.Command{
 		case "json":
 			rep = reporter.NewJSONReporter()
 		case "sarif":
-			rep = reporter.NewSARIFReporter()
+			rep = reporter.NewSARIFReporter(eng.Rules(), rootCmd.Version)
 		default:
 			rep = reporter.NewConsoleReporter(noColor)
 		}
