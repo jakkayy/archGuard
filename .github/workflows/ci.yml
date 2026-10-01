@@ -66,6 +66,28 @@ jobs:
         with:
           sarif_file: archguard-results.sarif
 
+  cross-platform-tests:
+    name: Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go Environment
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Run Unit & CLI Tests
+        run: go test ./...
+
+      - name: Self-Scan with ArchGuard
+        run: go run ./cmd/archguard scan
+
   action-self-test:
     name: Test Reusable GitHub Action
     runs-on: ubuntu-latest
