@@ -1,0 +1,12 @@
+# Config used by scripts/smoke-realworld.sh: what a typical team would enable on an existing repo.
+version: "v1"
+rules:
+  no-secrets:
+    enabled: true
+    exclude: ["**/testdata/**", "*_test.go", "tests", "docs_src"]
+  file-naming:
+    enabled: true
+    pattern: '^[a-zA-Z0-9._-]+$'
+  required-files:
+    enabled: true
+    files: ["README.md"]

@@ -304,6 +304,8 @@ go test -race ./...
 go run ./cmd/archguard scan     # ArchGuard scans its own repository in CI
 ```
 
+`scripts/smoke-realworld.sh` scans pinned commits of real open-source projects (cobra, gin, FastAPI, Vercel Commerce, Terraform) and fails on any false-positive `ERROR` or malformed JSON/SARIF output. It runs weekly, and on pull requests that touch rules or the engine.
+
 CI enforces `gofmt`, `go vet`, [golangci-lint](https://golangci-lint.run), the race detector, a minimum of **80% test coverage**, a self-scan of this repository, and an end-to-end test of the GitHub Action. Releases are built by [GoReleaser](https://goreleaser.com) whenever a semver tag (`vX.Y.Z`) is pushed.
 
 ---
