@@ -80,69 +80,15 @@ func isValidFormat(f string) bool {
 // buildEngine registers every built-in rule, configured with params from cfg when present.
 func buildEngine(cfg *config.Config) (*core.Engine, error) {
 	eng := core.NewEngine()
-	ruleCfg := func(id string) config.RuleConfig { return cfg.Rules[id] }
-
-	fn := ruleCfg("file-naming")
-	pattern, err := stringParam(fn, "file-naming", "pattern")
-	if err != nil {
-		return nil, err
-	}
-	namingRule, err := rule.NewFileNamingRule(pattern, policy.Severity(fn.Severity))
-	if err != nil {
-		return nil, fmt.Errorf("failed initializing file-naming rule: %w", err)
-	}
-	eng.RegisterRule(namingRule)
-
-	oa := ruleCfg("openapi-exists")
-	path, err := stringParam(oa, "openapi-exists", "path")
-	if err != nil {
-		return nil, err
-	}
-	eng.RegisterRule(rule.NewOpenAPIExistsRule(path, policy.Severity(oa.Severity)))
-
-	rf := ruleCfg("required-files")
-	files, err := stringSliceParam(rf, "required-files", "files")
-	if err != nil {
-		return nil, err
-	}
-	eng.RegisterRule(rule.NewRequiredFilesRule(files, policy.Severity(rf.Severity)))
-
-	ns := ruleCfg("no-secrets")
-	eng.RegisterRule(rule.NewNoSecretsRule(policy.Severity(ns.Severity)))
-
-	return eng, nil
-}
-
-func stringParam(rc config.RuleConfig, ruleID, key string) (string, error) {
-	raw, ok := rc.Params[key]
-	if !ok || raw == nil {
-		return "", nil
-	}
-	s, ok := raw.(string)
-	if !ok {
-		return "", fmt.Errorf("rule %q: parameter %q must be a string, got %T", ruleID, key, raw)
-	}
-	return s, nil
-}
-
-func stringSliceParam(rc config.RuleConfig, ruleID, key string) ([]string, error) {
-	raw, ok := rc.Params[key]
-	if !ok || raw == nil {
-		return nil, nil
-	}
-	items, ok := raw.([]any)
-	if !ok {
-		return nil, fmt.Errorf("rule %q: parameter %q must be a list of strings, got %T", ruleID, key, raw)
-	}
-	out := make([]string, 0, len(items))
-	for i, item := range items {
-		s, ok := item.(string)
-		if !ok {
-			return nil, fmt.Errorf("rule %q: parameter %q[%d] must be a string, got %T", ruleID, key, i, item)
+	for _, def := range rule.Builtins().Definitions() {
+		rc := cfg.Rules[def.ID]
+		r, err := def.Build(rc.Params, policy.Severity(rc.Severity))
+		if err != nil {
+			return nil, err
 		}
-		out = append(out, s)
+		eng.RegisterRule(r)
 	}
-	return out, nil
+	return eng, nil
 }
 
 func init() {

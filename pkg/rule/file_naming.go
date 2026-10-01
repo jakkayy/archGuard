@@ -9,6 +9,9 @@ import (
 	"github.com/jakkayy/archGuard/pkg/policy"
 )
 
+// DefaultFileNamingPattern is used when no pattern is configured.
+const DefaultFileNamingPattern = `^[a-z0-9._-]+$`
+
 // FileNamingRule validates project filenames against a specified regex pattern.
 type FileNamingRule struct {
 	id          string
@@ -21,7 +24,7 @@ type FileNamingRule struct {
 // NewFileNamingRule initializes a FileNamingRule with a regex pattern and default severity.
 func NewFileNamingRule(patternStr string, severity policy.Severity) (*FileNamingRule, error) {
 	if patternStr == "" {
-		patternStr = `^[a-z0-9._-]+$`
+		patternStr = DefaultFileNamingPattern
 	}
 	if severity == "" {
 		severity = policy.SeverityWarning

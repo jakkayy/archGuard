@@ -8,6 +8,9 @@ import (
 	"github.com/jakkayy/archGuard/pkg/policy"
 )
 
+// DefaultOpenAPIPath is used when no spec path is configured.
+const DefaultOpenAPIPath = "docs/openapi.json"
+
 // OpenAPIExistsRule validates that the designated OpenAPI specification file exists.
 type OpenAPIExistsRule struct {
 	id          string
@@ -20,7 +23,7 @@ type OpenAPIExistsRule struct {
 // NewOpenAPIExistsRule initializes an OpenAPIExistsRule with a target spec path and severity.
 func NewOpenAPIExistsRule(targetPath string, severity policy.Severity) *OpenAPIExistsRule {
 	if targetPath == "" {
-		targetPath = "docs/openapi.yaml"
+		targetPath = DefaultOpenAPIPath
 	}
 	if severity == "" {
 		severity = policy.SeverityError
