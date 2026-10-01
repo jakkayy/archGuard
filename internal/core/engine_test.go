@@ -2,6 +2,7 @@ package core_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/jakkayy/archGuard/internal/config"
@@ -65,5 +66,36 @@ func TestEngine_Run(t *testing.T) {
 
 	if res.ErrorCount() != 1 {
 		t.Errorf("expected ErrorCount 1, got %d", res.ErrorCount())
+	}
+}
+
+func TestEngine_Run_UnknownRuleSuggestsClosestMatch(t *testing.T) {
+	eng := core.NewEngine()
+	eng.RegisterRule(&mockRule{id: "no-secrets", severity: core.SeverityError})
+
+	cfg := &config.Config{
+		Rules: map[string]config.RuleConfig{
+			"no-secret": {Enabled: true},
+		},
+	}
+
+	_, err := eng.Run(context.Background(), t.TempDir(), cfg)
+	if err == nil {
+		t.Fatal("expected error for unknown rule, got nil")
+	}
+	if !strings.Contains(err.Error(), `did you mean "no-secrets"`) {
+		t.Errorf("expected suggestion in error, got: %v", err)
+	}
+}
+
+func TestEngine_Run_UnknownDisabledRuleStillErrors(t *testing.T) {
+	eng := core.NewEngine()
+	cfg := &config.Config{
+		Rules: map[string]config.RuleConfig{
+			"does-not-exist": {Enabled: false},
+		},
+	}
+	if _, err := eng.Run(context.Background(), t.TempDir(), cfg); err == nil {
+		t.Fatal("expected error for unknown rule even when disabled, got nil")
 	}
 }

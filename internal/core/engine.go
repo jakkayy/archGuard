@@ -67,12 +67,12 @@ func (e *Engine) Run(ctx context.Context, workingDir string, cfg *config.Config)
 
 	if cfg != nil {
 		for ruleID, ruleCfg := range cfg.Rules {
-			if !ruleCfg.Enabled {
-				continue
-			}
-
 			r, ok := e.rules[ruleID]
 			if !ok {
+				return nil, e.unknownRuleError(ruleID)
+			}
+
+			if !ruleCfg.Enabled {
 				continue
 			}
 
@@ -98,6 +98,39 @@ func (e *Engine) Run(ctx context.Context, workingDir string, cfg *config.Config)
 	}
 
 	return result, nil
+}
+
+func (e *Engine) unknownRuleError(ruleID string) error {
+	best, bestDist := "", -1
+	for id := range e.rules {
+		if d := levenshtein(ruleID, id); bestDist < 0 || d < bestDist || (d == bestDist && id < best) {
+			best, bestDist = id, d
+		}
+	}
+	if best != "" && bestDist <= 3 {
+		return fmt.Errorf("unknown rule %q in config (did you mean %q?)", ruleID, best)
+	}
+	return fmt.Errorf("unknown rule %q in config", ruleID)
+}
+
+func levenshtein(a, b string) int {
+	prev := make([]int, len(b)+1)
+	for j := range prev {
+		prev[j] = j
+	}
+	for i := 1; i <= len(a); i++ {
+		cur := make([]int, len(b)+1)
+		cur[0] = i
+		for j := 1; j <= len(b); j++ {
+			cost := 1
+			if a[i-1] == b[j-1] {
+				cost = 0
+			}
+			cur[j] = min(prev[j]+1, cur[j-1]+1, prev[j-1]+cost)
+		}
+		prev = cur
+	}
+	return prev[len(b)]
 }
 
 func (e *Engine) collectFiles(rootDir string, customIgnores []string) ([]string, error) {
