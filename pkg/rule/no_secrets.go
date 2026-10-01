@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jakkayy/archGuard/internal/core"
+	"github.com/jakkayy/archGuard/pkg/policy"
 )
 
 type secretPattern struct {
@@ -21,14 +21,14 @@ type NoSecretsRule struct {
 	id          string
 	name        string
 	description string
-	severity    core.Severity
+	severity    policy.Severity
 	patterns    []secretPattern
 }
 
 // NewNoSecretsRule initializes a NoSecretsRule with pre-defined security patterns.
-func NewNoSecretsRule(severity core.Severity) *NoSecretsRule {
+func NewNoSecretsRule(severity policy.Severity) *NoSecretsRule {
 	if severity == "" {
-		severity = core.SeverityError
+		severity = policy.SeverityError
 	}
 
 	patterns := []secretPattern{
@@ -84,7 +84,7 @@ func (r *NoSecretsRule) Description() string {
 }
 
 // Severity returns the severity level of rule violations.
-func (r *NoSecretsRule) Severity() core.Severity {
+func (r *NoSecretsRule) Severity() policy.Severity {
 	return r.severity
 }
 
@@ -94,8 +94,8 @@ const IgnoreDirective = "archguard:ignore"
 const maxScanFileSize = 1024 * 1024
 
 // Run scans workspace files line by line for secret patterns.
-func (r *NoSecretsRule) Run(ctx *core.ScanContext) ([]core.Issue, error) {
-	var issues []core.Issue
+func (r *NoSecretsRule) Run(ctx *policy.ScanContext) ([]policy.Issue, error) {
+	var issues []policy.Issue
 
 	for _, relPath := range ctx.Files {
 		if err := ctx.Ctx.Err(); err != nil {
@@ -124,7 +124,7 @@ func (r *NoSecretsRule) Run(ctx *core.ScanContext) ([]core.Issue, error) {
 			}
 			for _, p := range r.patterns {
 				if p.regex.MatchString(line) {
-					issues = append(issues, core.Issue{
+					issues = append(issues, policy.Issue{
 						RuleID:     r.id,
 						FilePath:   relPath,
 						Line:       i + 1,

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/jakkayy/archGuard/internal/core"
+	"github.com/jakkayy/archGuard/pkg/policy"
 )
 
 func TestRequiredFilesRule_FileExists(t *testing.T) {
@@ -16,8 +16,8 @@ func TestRequiredFilesRule_FileExists(t *testing.T) {
 		t.Fatalf("failed creating temp file: %v", err)
 	}
 
-	r := NewRequiredFilesRule([]string{"README.md"}, core.SeverityError)
-	ctx := core.NewScanContext(context.Background(), tempDir, []string{"README.md"})
+	r := NewRequiredFilesRule([]string{"README.md"}, policy.SeverityError)
+	ctx := policy.NewScanContext(context.Background(), tempDir, []string{"README.md"})
 
 	issues, err := r.Run(ctx)
 	if err != nil {
@@ -31,8 +31,8 @@ func TestRequiredFilesRule_FileExists(t *testing.T) {
 func TestRequiredFilesRule_FileMissing(t *testing.T) {
 	tempDir := t.TempDir()
 
-	r := NewRequiredFilesRule([]string{"README.md", "LICENSE"}, core.SeverityError)
-	ctx := core.NewScanContext(context.Background(), tempDir, []string{})
+	r := NewRequiredFilesRule([]string{"README.md", "LICENSE"}, policy.SeverityError)
+	ctx := policy.NewScanContext(context.Background(), tempDir, []string{})
 
 	issues, err := r.Run(ctx)
 	if err != nil {

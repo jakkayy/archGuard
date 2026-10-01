@@ -6,9 +6,11 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/jakkayy/archGuard/internal/core"
-	"github.com/jakkayy/archGuard/pkg/rule"
 	"github.com/spf13/cobra"
+
+	"github.com/jakkayy/archGuard/internal/core"
+	"github.com/jakkayy/archGuard/pkg/policy"
+	"github.com/jakkayy/archGuard/pkg/rule"
 )
 
 var rulesCmd = &cobra.Command{
@@ -18,13 +20,13 @@ var rulesCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		engine := core.NewEngine()
 
-		fileNaming, err := rule.NewFileNamingRule("", core.SeverityWarning)
+		fileNaming, err := rule.NewFileNamingRule("", policy.SeverityWarning)
 		if err == nil {
 			engine.RegisterRule(fileNaming)
 		}
-		engine.RegisterRule(rule.NewOpenAPIExistsRule("", core.SeverityError))
-		engine.RegisterRule(rule.NewRequiredFilesRule([]string{"README.md"}, core.SeverityError))
-		engine.RegisterRule(rule.NewNoSecretsRule(core.SeverityError))
+		engine.RegisterRule(rule.NewOpenAPIExistsRule("", policy.SeverityError))
+		engine.RegisterRule(rule.NewRequiredFilesRule([]string{"README.md"}, policy.SeverityError))
+		engine.RegisterRule(rule.NewNoSecretsRule(policy.SeverityError))
 
 		rules := engine.Rules()
 		sort.Slice(rules, func(i, j int) bool {
@@ -42,9 +44,9 @@ var rulesCmd = &cobra.Command{
 		for i, r := range rules {
 			var sevBadge string
 			switch r.Severity() {
-			case core.SeverityError:
+			case policy.SeverityError:
 				sevBadge = boldRed("ERROR")
-			case core.SeverityWarning:
+			case policy.SeverityWarning:
 				sevBadge = boldYellow("WARN")
 			default:
 				sevBadge = bold("INFO")

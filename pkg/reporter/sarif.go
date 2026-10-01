@@ -6,7 +6,7 @@ import (
 	"io"
 	"path/filepath"
 
-	"github.com/jakkayy/archGuard/internal/core"
+	"github.com/jakkayy/archGuard/pkg/policy"
 )
 
 // SARIFLog represents the top-level SARIF v2.1.0 JSON structure.
@@ -86,21 +86,21 @@ type SARIFRegion struct {
 
 // SARIFReporter formats ScanResult into GitHub-compatible SARIF v2.1.0 JSON.
 type SARIFReporter struct {
-	rules   []core.Rule
+	rules   []policy.Rule
 	version string
 }
 
 // NewSARIFReporter initializes a SARIFReporter. rules populates tool.driver.rules so
 // code scanning UIs can show rule names and descriptions; it may be nil.
-func NewSARIFReporter(rules []core.Rule, version string) *SARIFReporter {
+func NewSARIFReporter(rules []policy.Rule, version string) *SARIFReporter {
 	return &SARIFReporter{rules: rules, version: version}
 }
 
-func sarifLevel(sev core.Severity) string {
+func sarifLevel(sev policy.Severity) string {
 	switch sev {
-	case core.SeverityError:
+	case policy.SeverityError:
 		return "error"
-	case core.SeverityWarning:
+	case policy.SeverityWarning:
 		return "warning"
 	default:
 		return "note"
@@ -108,7 +108,7 @@ func sarifLevel(sev core.Severity) string {
 }
 
 // Report serializes ScanResult into SARIF v2.1.0 JSON and writes to the provided Writer.
-func (r *SARIFReporter) Report(w io.Writer, res *core.ScanResult) error {
+func (r *SARIFReporter) Report(w io.Writer, res *policy.ScanResult) error {
 	if res == nil {
 		return fmt.Errorf("cannot format nil scan result")
 	}

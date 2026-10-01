@@ -8,30 +8,31 @@ import (
 	"time"
 
 	"github.com/jakkayy/archGuard/internal/config"
+	"github.com/jakkayy/archGuard/pkg/policy"
 )
 
 // Engine orchestrates project scanning by executing registered policy rules.
 type Engine struct {
-	rules map[string]Rule
+	rules map[string]policy.Rule
 }
 
 // NewEngine initializes a new Engine instance.
 func NewEngine() *Engine {
 	return &Engine{
-		rules: make(map[string]Rule),
+		rules: make(map[string]policy.Rule),
 	}
 }
 
-// RegisterRule registers a Rule implementation into the engine.
-func (e *Engine) RegisterRule(r Rule) {
+// RegisterRule registers a policy.Rule implementation into the engine.
+func (e *Engine) RegisterRule(r policy.Rule) {
 	if r != nil {
 		e.rules[r.ID()] = r
 	}
 }
 
 // Rules returns all registered rules sorted by ID.
-func (e *Engine) Rules() []Rule {
-	list := make([]Rule, 0, len(e.rules))
+func (e *Engine) Rules() []policy.Rule {
+	list := make([]policy.Rule, 0, len(e.rules))
 	for _, r := range e.rules {
 		list = append(list, r)
 	}
@@ -40,7 +41,7 @@ func (e *Engine) Rules() []Rule {
 }
 
 // Run executes all active rules enabled in Config against the target working directory.
-func (e *Engine) Run(ctx context.Context, workingDir string, cfg *config.Config) (*ScanResult, error) {
+func (e *Engine) Run(ctx context.Context, workingDir string, cfg *config.Config) (*policy.ScanResult, error) {
 	startTime := time.Now()
 
 	if workingDir == "" {
@@ -62,9 +63,9 @@ func (e *Engine) Run(ctx context.Context, workingDir string, cfg *config.Config)
 		return nil, fmt.Errorf("failed to collect project files in %s: %w", absWorkingDir, err)
 	}
 
-	scanCtx := NewScanContext(ctx, absWorkingDir, files)
+	scanCtx := policy.NewScanContext(ctx, absWorkingDir, files)
 
-	var allIssues []Issue
+	var allIssues []policy.Issue
 
 	if cfg != nil {
 		ruleIDs := make([]string, 0, len(cfg.Rules))
@@ -101,7 +102,7 @@ func (e *Engine) Run(ctx context.Context, workingDir string, cfg *config.Config)
 
 	scanDuration := time.Since(startTime).Milliseconds()
 
-	result := &ScanResult{
+	result := &policy.ScanResult{
 		Issues:     allIssues,
 		ScanTimeMs: scanDuration,
 		Passed:     true,
@@ -115,7 +116,7 @@ func (e *Engine) Run(ctx context.Context, workingDir string, cfg *config.Config)
 }
 
 // sortIssues orders issues by file, line, then rule so output is stable across runs.
-func sortIssues(issues []Issue) {
+func sortIssues(issues []policy.Issue) {
 	sort.SliceStable(issues, func(i, j int) bool {
 		a, b := issues[i], issues[j]
 		if a.FilePath != b.FilePath {

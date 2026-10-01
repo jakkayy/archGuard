@@ -1,4 +1,4 @@
-package core
+package policy
 
 // Rule defines the standard interface contract that all policy inspection rules must implement.
 type Rule interface {

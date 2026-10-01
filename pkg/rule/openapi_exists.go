@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/jakkayy/archGuard/internal/core"
+	"github.com/jakkayy/archGuard/pkg/policy"
 )
 
 // OpenAPIExistsRule validates that the designated OpenAPI specification file exists.
@@ -13,17 +13,17 @@ type OpenAPIExistsRule struct {
 	id          string
 	name        string
 	description string
-	severity    core.Severity
+	severity    policy.Severity
 	targetPath  string
 }
 
 // NewOpenAPIExistsRule initializes an OpenAPIExistsRule with a target spec path and severity.
-func NewOpenAPIExistsRule(targetPath string, severity core.Severity) *OpenAPIExistsRule {
+func NewOpenAPIExistsRule(targetPath string, severity policy.Severity) *OpenAPIExistsRule {
 	if targetPath == "" {
 		targetPath = "docs/openapi.yaml"
 	}
 	if severity == "" {
-		severity = core.SeverityError
+		severity = policy.SeverityError
 	}
 
 	return &OpenAPIExistsRule{
@@ -51,18 +51,18 @@ func (r *OpenAPIExistsRule) Description() string {
 }
 
 // Severity returns the severity level of rule violations.
-func (r *OpenAPIExistsRule) Severity() core.Severity {
+func (r *OpenAPIExistsRule) Severity() policy.Severity {
 	return r.severity
 }
 
 // Run executes the OpenAPI spec file existence check.
-func (r *OpenAPIExistsRule) Run(ctx *core.ScanContext) ([]core.Issue, error) {
-	var issues []core.Issue
+func (r *OpenAPIExistsRule) Run(ctx *policy.ScanContext) ([]policy.Issue, error) {
+	var issues []policy.Issue
 
 	fullPath := filepath.Join(ctx.WorkingDir, r.targetPath)
 	info, err := os.Stat(fullPath)
 	if os.IsNotExist(err) || (err == nil && info.IsDir()) {
-		issues = append(issues, core.Issue{
+		issues = append(issues, policy.Issue{
 			RuleID:     r.id,
 			FilePath:   r.targetPath,
 			Message:    fmt.Sprintf("required OpenAPI specification file '%s' was not found", r.targetPath),

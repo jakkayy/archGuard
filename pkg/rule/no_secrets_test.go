@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jakkayy/archGuard/internal/core"
+	"github.com/jakkayy/archGuard/pkg/policy"
 )
 
 func TestNoSecretsRule_CleanFile(t *testing.T) {
@@ -17,8 +17,8 @@ func TestNoSecretsRule_CleanFile(t *testing.T) {
 		t.Fatalf("failed creating temp file: %v", err)
 	}
 
-	r := NewNoSecretsRule(core.SeverityError)
-	ctx := core.NewScanContext(context.Background(), tempDir, []string{"config.go"})
+	r := NewNoSecretsRule(policy.SeverityError)
+	ctx := policy.NewScanContext(context.Background(), tempDir, []string{"config.go"})
 
 	issues, err := r.Run(ctx)
 	if err != nil {
@@ -37,8 +37,8 @@ func TestNoSecretsRule_HardcodedSecrets(t *testing.T) {
 		t.Fatalf("failed creating temp file: %v", err)
 	}
 
-	r := NewNoSecretsRule(core.SeverityError)
-	ctx := core.NewScanContext(context.Background(), tempDir, []string{"keys.go"})
+	r := NewNoSecretsRule(policy.SeverityError)
+	ctx := policy.NewScanContext(context.Background(), tempDir, []string{"keys.go"})
 
 	issues, err := r.Run(ctx)
 	if err != nil {
@@ -49,14 +49,14 @@ func TestNoSecretsRule_HardcodedSecrets(t *testing.T) {
 	}
 }
 
-func runNoSecrets(t *testing.T, name, content string) []core.Issue {
+func runNoSecrets(t *testing.T, name, content string) []policy.Issue {
 	t.Helper()
 	tempDir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(tempDir, name), []byte(content), 0644); err != nil {
 		t.Fatalf("failed creating temp file: %v", err)
 	}
-	r := NewNoSecretsRule(core.SeverityError)
-	issues, err := r.Run(core.NewScanContext(context.Background(), tempDir, []string{name}))
+	r := NewNoSecretsRule(policy.SeverityError)
+	issues, err := r.Run(policy.NewScanContext(context.Background(), tempDir, []string{name}))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

@@ -8,19 +8,20 @@ import (
 
 	"github.com/jakkayy/archGuard/internal/config"
 	"github.com/jakkayy/archGuard/internal/core"
+	"github.com/jakkayy/archGuard/pkg/policy"
 )
 
 type mockRule struct {
 	id       string
-	severity core.Severity
-	issues   []core.Issue
+	severity policy.Severity
+	issues   []policy.Issue
 }
 
-func (m *mockRule) ID() string              { return m.id }
-func (m *mockRule) Name() string            { return "Mock Rule" }
-func (m *mockRule) Description() string     { return "Mock Rule Description" }
-func (m *mockRule) Severity() core.Severity { return m.severity }
-func (m *mockRule) Run(ctx *core.ScanContext) ([]core.Issue, error) {
+func (m *mockRule) ID() string                { return m.id }
+func (m *mockRule) Name() string              { return "Mock Rule" }
+func (m *mockRule) Description() string       { return "Mock Rule Description" }
+func (m *mockRule) Severity() policy.Severity { return m.severity }
+func (m *mockRule) Run(ctx *policy.ScanContext) ([]policy.Issue, error) {
 	return m.issues, nil
 }
 
@@ -29,13 +30,13 @@ func TestEngine_Run(t *testing.T) {
 
 	mock := &mockRule{
 		id:       "file-naming",
-		severity: core.SeverityError,
-		issues: []core.Issue{
+		severity: policy.SeverityError,
+		issues: []policy.Issue{
 			{
 				RuleID:   "file-naming",
 				FilePath: "BadFile.go",
 				Message:  "invalid name",
-				Severity: core.SeverityError,
+				Severity: policy.SeverityError,
 			},
 		},
 	}
@@ -72,7 +73,7 @@ func TestEngine_Run(t *testing.T) {
 
 func TestEngine_Run_UnknownRuleSuggestsClosestMatch(t *testing.T) {
 	eng := core.NewEngine()
-	eng.RegisterRule(&mockRule{id: "no-secrets", severity: core.SeverityError})
+	eng.RegisterRule(&mockRule{id: "no-secrets", severity: policy.SeverityError})
 
 	cfg := &config.Config{
 		Rules: map[string]config.RuleConfig{
@@ -103,13 +104,13 @@ func TestEngine_Run_UnknownDisabledRuleStillErrors(t *testing.T) {
 
 func TestEngine_Run_IssuesAreSortedDeterministically(t *testing.T) {
 	eng := core.NewEngine()
-	eng.RegisterRule(&mockRule{id: "rule-b", severity: core.SeverityWarning, issues: []core.Issue{
-		{RuleID: "rule-b", FilePath: "b.go", Line: 2, Severity: core.SeverityWarning},
-		{RuleID: "rule-b", FilePath: "a.go", Line: 9, Severity: core.SeverityWarning},
+	eng.RegisterRule(&mockRule{id: "rule-b", severity: policy.SeverityWarning, issues: []policy.Issue{
+		{RuleID: "rule-b", FilePath: "b.go", Line: 2, Severity: policy.SeverityWarning},
+		{RuleID: "rule-b", FilePath: "a.go", Line: 9, Severity: policy.SeverityWarning},
 	}})
-	eng.RegisterRule(&mockRule{id: "rule-a", severity: core.SeverityWarning, issues: []core.Issue{
-		{RuleID: "rule-a", FilePath: "b.go", Line: 2, Severity: core.SeverityWarning},
-		{RuleID: "rule-a", FilePath: "a.go", Line: 1, Severity: core.SeverityWarning},
+	eng.RegisterRule(&mockRule{id: "rule-a", severity: policy.SeverityWarning, issues: []policy.Issue{
+		{RuleID: "rule-a", FilePath: "b.go", Line: 2, Severity: policy.SeverityWarning},
+		{RuleID: "rule-a", FilePath: "a.go", Line: 1, Severity: policy.SeverityWarning},
 	}})
 
 	cfg := &config.Config{Rules: map[string]config.RuleConfig{
@@ -134,7 +135,7 @@ func TestEngine_Run_IssuesAreSortedDeterministically(t *testing.T) {
 
 func TestEngine_Run_StopsWhenContextCancelled(t *testing.T) {
 	eng := core.NewEngine()
-	eng.RegisterRule(&mockRule{id: "rule-a", severity: core.SeverityError})
+	eng.RegisterRule(&mockRule{id: "rule-a", severity: policy.SeverityError})
 	cfg := &config.Config{Rules: map[string]config.RuleConfig{"rule-a": {Enabled: true}}}
 
 	ctx, cancel := context.WithCancel(context.Background())

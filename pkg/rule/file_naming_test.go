@@ -5,17 +5,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jakkayy/archGuard/internal/core"
+	"github.com/jakkayy/archGuard/pkg/policy"
 	"github.com/jakkayy/archGuard/pkg/rule"
 )
 
 func TestFileNamingRule_ValidFiles(t *testing.T) {
-	r, err := rule.NewFileNamingRule(`^[a-z0-9._-]+$`, core.SeverityWarning)
+	r, err := rule.NewFileNamingRule(`^[a-z0-9._-]+$`, policy.SeverityWarning)
 	if err != nil {
 		t.Fatalf("failed to create rule: %v", err)
 	}
 
-	ctx := core.NewScanContext(nil, ".", []string{
+	ctx := policy.NewScanContext(nil, ".", []string{
 		"main.go",
 		"file_naming.go",
 		"config-file.yaml",
@@ -32,12 +32,12 @@ func TestFileNamingRule_ValidFiles(t *testing.T) {
 }
 
 func TestFileNamingRule_InvalidFiles(t *testing.T) {
-	r, err := rule.NewFileNamingRule(`^[a-z0-9._-]+$`, core.SeverityWarning)
+	r, err := rule.NewFileNamingRule(`^[a-z0-9._-]+$`, policy.SeverityWarning)
 	if err != nil {
 		t.Fatalf("failed to create rule: %v", err)
 	}
 
-	ctx := core.NewScanContext(nil, ".", []string{
+	ctx := policy.NewScanContext(nil, ".", []string{
 		"InvalidFileName.go",
 		"bad file name.ts",
 	})
@@ -51,17 +51,17 @@ func TestFileNamingRule_InvalidFiles(t *testing.T) {
 		t.Errorf("expected 2 issues for invalid filenames, got %d", len(issues))
 	}
 
-	if issues[0].Severity != core.SeverityWarning {
+	if issues[0].Severity != policy.SeverityWarning {
 		t.Errorf("expected severity WARNING, got %s", issues[0].Severity)
 	}
 }
 
 func TestFileNamingRule_SuggestionReflectsCustomPattern(t *testing.T) {
-	r, err := rule.NewFileNamingRule(`^[A-Z][a-zA-Z]+\.tsx$`, core.SeverityWarning)
+	r, err := rule.NewFileNamingRule(`^[A-Z][a-zA-Z]+\.tsx$`, policy.SeverityWarning)
 	if err != nil {
 		t.Fatal(err)
 	}
-	issues, err := r.Run(core.NewScanContext(context.Background(), t.TempDir(), []string{"components/button.tsx"}))
+	issues, err := r.Run(policy.NewScanContext(context.Background(), t.TempDir(), []string{"components/button.tsx"}))
 	if err != nil {
 		t.Fatal(err)
 	}

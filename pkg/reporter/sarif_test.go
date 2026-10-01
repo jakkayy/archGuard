@@ -5,20 +5,20 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/jakkayy/archGuard/internal/core"
+	"github.com/jakkayy/archGuard/pkg/policy"
 )
 
 func TestSARIFReporter_Report(t *testing.T) {
 	rep := NewSARIFReporter(nil, "")
 	var buf bytes.Buffer
 
-	res := &core.ScanResult{
-		Issues: []core.Issue{
+	res := &policy.ScanResult{
+		Issues: []policy.Issue{
 			{
 				RuleID:     "file-naming",
 				FilePath:   "src/BadFile.js",
 				Message:    "filename does not match pattern",
-				Severity:   core.SeverityWarning,
+				Severity:   policy.SeverityWarning,
 				Suggestion: "Rename file",
 			},
 		},
@@ -54,19 +54,19 @@ func TestSARIFReporter_Report(t *testing.T) {
 
 type stubRule struct{ id string }
 
-func (s stubRule) ID() string                                  { return s.id }
-func (s stubRule) Name() string                                { return "Stub " + s.id }
-func (s stubRule) Description() string                         { return "stub description" }
-func (s stubRule) Severity() core.Severity                     { return core.SeverityError }
-func (s stubRule) Run(*core.ScanContext) ([]core.Issue, error) { return nil, nil }
+func (s stubRule) ID() string                                      { return s.id }
+func (s stubRule) Name() string                                    { return "Stub " + s.id }
+func (s stubRule) Description() string                             { return "stub description" }
+func (s stubRule) Severity() policy.Severity                       { return policy.SeverityError }
+func (s stubRule) Run(*policy.ScanContext) ([]policy.Issue, error) { return nil, nil }
 
 func TestSARIFReporter_IncludesRegionAndRuleMetadata(t *testing.T) {
-	rep := NewSARIFReporter([]core.Rule{stubRule{id: "no-secrets"}}, "v1.2.3")
+	rep := NewSARIFReporter([]policy.Rule{stubRule{id: "no-secrets"}}, "v1.2.3")
 	var buf bytes.Buffer
 
-	res := &core.ScanResult{Issues: []core.Issue{
-		{RuleID: "no-secrets", FilePath: "src/config.go", Line: 42, Message: "secret", Severity: core.SeverityError},
-		{RuleID: "required-files", FilePath: "README.md", Message: "missing", Severity: core.SeverityError},
+	res := &policy.ScanResult{Issues: []policy.Issue{
+		{RuleID: "no-secrets", FilePath: "src/config.go", Line: 42, Message: "secret", Severity: policy.SeverityError},
+		{RuleID: "required-files", FilePath: "README.md", Message: "missing", Severity: policy.SeverityError},
 	}}
 	if err := rep.Report(&buf, res); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -105,7 +105,7 @@ func TestSARIFReporter_IncludesRegionAndRuleMetadata(t *testing.T) {
 
 func TestSARIFReporter_EmptyResultsSerializeAsArrays(t *testing.T) {
 	var buf bytes.Buffer
-	if err := NewSARIFReporter(nil, "").Report(&buf, &core.ScanResult{}); err != nil {
+	if err := NewSARIFReporter(nil, "").Report(&buf, &policy.ScanResult{}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	out := buf.String()

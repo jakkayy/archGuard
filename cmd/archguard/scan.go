@@ -8,6 +8,7 @@ import (
 
 	"github.com/jakkayy/archGuard/internal/config"
 	"github.com/jakkayy/archGuard/internal/core"
+	"github.com/jakkayy/archGuard/pkg/policy"
 	"github.com/jakkayy/archGuard/pkg/reporter"
 	"github.com/jakkayy/archGuard/pkg/rule"
 )
@@ -86,7 +87,7 @@ func buildEngine(cfg *config.Config) (*core.Engine, error) {
 	if err != nil {
 		return nil, err
 	}
-	namingRule, err := rule.NewFileNamingRule(pattern, core.Severity(fn.Severity))
+	namingRule, err := rule.NewFileNamingRule(pattern, policy.Severity(fn.Severity))
 	if err != nil {
 		return nil, fmt.Errorf("failed initializing file-naming rule: %w", err)
 	}
@@ -97,17 +98,17 @@ func buildEngine(cfg *config.Config) (*core.Engine, error) {
 	if err != nil {
 		return nil, err
 	}
-	eng.RegisterRule(rule.NewOpenAPIExistsRule(path, core.Severity(oa.Severity)))
+	eng.RegisterRule(rule.NewOpenAPIExistsRule(path, policy.Severity(oa.Severity)))
 
 	rf := ruleCfg("required-files")
 	files, err := stringSliceParam(rf, "required-files", "files")
 	if err != nil {
 		return nil, err
 	}
-	eng.RegisterRule(rule.NewRequiredFilesRule(files, core.Severity(rf.Severity)))
+	eng.RegisterRule(rule.NewRequiredFilesRule(files, policy.Severity(rf.Severity)))
 
 	ns := ruleCfg("no-secrets")
-	eng.RegisterRule(rule.NewNoSecretsRule(core.Severity(ns.Severity)))
+	eng.RegisterRule(rule.NewNoSecretsRule(policy.Severity(ns.Severity)))
 
 	return eng, nil
 }

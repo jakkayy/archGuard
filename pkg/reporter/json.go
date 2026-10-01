@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/jakkayy/archGuard/internal/core"
+	"github.com/jakkayy/archGuard/pkg/policy"
 )
 
 // JSONReporter formats scan results into indented JSON output.
@@ -17,7 +17,7 @@ func NewJSONReporter() *JSONReporter {
 }
 
 // Report writes formatted JSON scan results to the provided io.Writer.
-func (j *JSONReporter) Report(w io.Writer, res *core.ScanResult) error {
+func (j *JSONReporter) Report(w io.Writer, res *policy.ScanResult) error {
 	if res == nil {
 		return fmt.Errorf("cannot format nil scan result")
 	}

@@ -7,7 +7,7 @@ import (
 
 	"github.com/fatih/color"
 
-	"github.com/jakkayy/archGuard/internal/core"
+	"github.com/jakkayy/archGuard/pkg/policy"
 )
 
 // ConsoleReporter formats scan results into colored terminal output.
@@ -23,7 +23,7 @@ func NewConsoleReporter(noColor bool) *ConsoleReporter {
 }
 
 // Report writes colored scan result report to the provided io.Writer.
-func (c *ConsoleReporter) Report(w io.Writer, res *core.ScanResult) error {
+func (c *ConsoleReporter) Report(w io.Writer, res *policy.ScanResult) error {
 	if res == nil {
 		return fmt.Errorf("cannot format nil scan result")
 	}
@@ -47,9 +47,9 @@ func (c *ConsoleReporter) Report(w io.Writer, res *core.ScanResult) error {
 		for _, issue := range res.Issues {
 			var badge string
 			switch issue.Severity {
-			case core.SeverityError:
+			case policy.SeverityError:
 				badge = red("🚨 ERROR")
-			case core.SeverityWarning:
+			case policy.SeverityWarning:
 				badge = yellow("⚠️  WARN ")
 			default:
 				badge = cyan("ℹ️  INFO ")
