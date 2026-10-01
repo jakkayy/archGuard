@@ -5,7 +5,7 @@
 > *เปลี่ยนกฎการเขียนโค้ด มาตรฐานความปลอดภัย และสถาปัตยกรรมขององค์กร ให้กลายเป็นการตรวจสอบอัตโนมัติ (Automated Engineering Policy Engine)*
 
 [![Release](https://img.shields.io/badge/Release-v0.4.1-blue.svg)](https://github.com/jakkayy/archGuard/releases)
-[![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat&logo=go)](https://golang.org)
+[![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://golang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
@@ -153,7 +153,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.25'
 
       - name: Install ArchGuard Engine
         run: go install github.com/jakkayy/archGuard/cmd/archguard@latest
