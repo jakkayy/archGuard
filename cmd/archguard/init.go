@@ -69,7 +69,7 @@ var initCmd = &cobra.Command{
 			fmt.Fprintln(out, strings.Repeat("─", 50))
 
 			var err error
-			if answers, err = runWizard(); err != nil {
+			if answers, err = runWizard(terminalPrompter{}); err != nil {
 				return fmt.Errorf("setup cancelled: %w (use --non-interactive to skip the wizard)", err)
 			}
 		}
@@ -88,8 +88,22 @@ var initCmd = &cobra.Command{
 	},
 }
 
-func choose(prompt string, choices []string) (string, error) {
+// prompter abstracts the interactive terminal UI so the wizard logic can be tested.
+type prompter interface {
+	Choose(prompt string, choices []string) (string, error)
+	Input(prompt, initial string) (string, error)
+}
+
+type terminalPrompter struct{}
+
+func (terminalPrompter) Choose(prompt string, choices []string) (string, error) {
 	return selection.New(prompt, choices).RunPrompt()
+}
+
+func (terminalPrompter) Input(prompt, initial string) (string, error) {
+	input := textinput.New(prompt)
+	input.InitialValue = initial
+	return input.RunPrompt()
 }
 
 var (
@@ -106,10 +120,10 @@ var (
 	}
 )
 
-func runWizard() (initAnswers, error) {
+func runWizard(p prompter) (initAnswers, error) {
 	a := defaultAnswers()
 
-	category, err := choose("Select your project category:", []string{
+	category, err := p.Choose("Select your project category:", []string{
 		"Frontend / Web App (e.g., Next.js, React, Vue, Svelte)",
 		"Backend REST API (e.g., Go, Node.js, Python, Spring Boot)",
 		"Full-Stack App (Frontend + Backend in single repository)",
@@ -123,27 +137,27 @@ func runWizard() (initAnswers, error) {
 	isBackend := false
 	switch {
 	case strings.HasPrefix(category, "Frontend"):
-		if a.Framework, err = choose("Select your Frontend Framework:", frontendChoices); err != nil {
+		if a.Framework, err = p.Choose("Select your Frontend Framework:", frontendChoices); err != nil {
 			return a, err
 		}
 	case strings.HasPrefix(category, "Backend"):
 		isBackend = true
-		if a.Framework, err = choose("Select your Backend Framework:", backendChoices); err != nil {
+		if a.Framework, err = p.Choose("Select your Backend Framework:", backendChoices); err != nil {
 			return a, err
 		}
 	case strings.HasPrefix(category, "Full-Stack"):
 		isBackend = true
-		fe, err := choose("Select your Frontend Framework:", frontendChoices)
+		fe, err := p.Choose("Select your Frontend Framework:", frontendChoices)
 		if err != nil {
 			return a, err
 		}
-		be, err := choose("Select your Backend Framework:", backendChoices)
+		be, err := p.Choose("Select your Backend Framework:", backendChoices)
 		if err != nil {
 			return a, err
 		}
 		a.Framework = fe + " + " + be
 	default:
-		if a.Framework, err = choose("Select your primary programming language:", []string{
+		if a.Framework, err = p.Choose("Select your primary programming language:", []string{
 			"Go",
 			"TypeScript / JavaScript",
 			"Python / Other",
@@ -153,7 +167,7 @@ func runWizard() (initAnswers, error) {
 	}
 
 	if isBackend {
-		openAPI, err := choose("Require an OpenAPI / Swagger spec file check for Backend API?", []string{
+		openAPI, err := p.Choose("Require an OpenAPI / Swagger spec file check for Backend API?", []string{
 			"Yes - Require spec file (Triggers 🚨 ERROR if missing)",
 			"No  - Disable OpenAPI check for now",
 		})
@@ -162,19 +176,17 @@ func runWizard() (initAnswers, error) {
 		}
 		if strings.HasPrefix(openAPI, "Yes") {
 			a.OpenAPIEnabled = true
-			input := textinput.New("Specify OpenAPI spec file path:")
-			input.InitialValue = defaultOpenAPIPath
-			p, err := input.RunPrompt()
+			specPath, err := p.Input("Specify OpenAPI spec file path:", defaultOpenAPIPath)
 			if err != nil {
 				return a, err
 			}
-			if p = strings.TrimSpace(p); p != "" {
-				a.OpenAPIPath = p
+			if specPath = strings.TrimSpace(specPath); specPath != "" {
+				a.OpenAPIPath = specPath
 			}
 		}
 	}
 
-	naming, err := choose("Select file naming policy rule:", []string{
+	naming, err := p.Choose("Select file naming policy rule:", []string{
 		"Strict Lowercase (a-z, 0-9, . _ -)      [Recommended for Go / Backend]",
 		"Flexible Framework (Include A-Z, [ ] ()) [Recommended for Next.js / React / Full-Stack]",
 		"Disabled           (Do not enforce file naming convention)",
