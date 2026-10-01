@@ -46,7 +46,7 @@ func (r *RuleConfig) UnmarshalYAML(value *yaml.Node) error {
 // Config represents the root configuration structure loaded from archguard.yaml.
 type Config struct {
 	Version string                `yaml:"version"`
-	Ignore  []string              `yaml:"ignore"`
+	Ignore  []string              `yaml:"ignore,omitempty"`
 	Rules   map[string]RuleConfig `yaml:"rules"`
 }
 
