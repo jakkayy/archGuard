@@ -96,7 +96,7 @@ Run `archguard rules` to print this catalog from the terminal.
 | :--- | :--- | :--- | :--- |
 | `no-secrets` | `ERROR` | — | AWS access keys (`AKIA…`/`ASIA…`), private key blocks (RSA, DSA, EC, OpenSSH, PGP, encrypted), GitHub tokens (`ghp_…`, `gho_…`, …), hardcoded `api_key` / `secret_key` / `client_secret` / `auth_token` assignments, and long Bearer tokens. Every match is reported with its line number. |
 | `required-files` | `ERROR` | `files` (list of strings, default `["README.md"]`) | Each listed path exists in the project. |
-| `file-naming` | `WARNING` | `pattern` (regex, default `^[a-z0-9._-]+$`) | Every file name matches the pattern. Dotfiles are skipped. |
+| `file-naming` | `WARNING` | `pattern` (regex, default `^[a-z0-9._-]+$`) | Every file name matches the pattern. Dotfiles and conventional names (`README*`, `LICENSE*`, `CHANGELOG*`, `CONTRIBUTING*`, `SECURITY*`, `Makefile`, `Dockerfile*`, ...) are always allowed. |
 | `openapi-exists` | `ERROR` | `path` (string, default `docs/openapi.json`) | The OpenAPI / Swagger spec file exists. |
 
 Every rule also accepts an `exclude` list of [path patterns](#path-patterns) that the rule should skip:
