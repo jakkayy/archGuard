@@ -55,6 +55,12 @@ var rulesCmd = &cobra.Command{
 			fmt.Fprintln(out)
 		}
 
+		fmt.Fprintln(out, "Every rule also accepts:")
+		for _, p := range rule.CommonParams {
+			fmt.Fprintf(out, "   • %s (%s) - %s\n", bold(p.Name), p.Type, p.Description)
+		}
+		fmt.Fprintln(out)
+
 		fmt.Fprintf(out, "Total Available Rules: %d\n\n", len(defs))
 		return nil
 	},

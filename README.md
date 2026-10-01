@@ -99,9 +99,20 @@ Run `archguard rules` to print this catalog from the terminal.
 | `file-naming` | `WARNING` | `pattern` (regex, default `^[a-z0-9._-]+$`) | Every file name matches the pattern. Dotfiles are skipped. |
 | `openapi-exists` | `ERROR` | `path` (string, default `docs/openapi.json`) | The OpenAPI / Swagger spec file exists. |
 
+Every rule also accepts an `exclude` list of [path patterns](#path-patterns) that the rule should skip:
+
+```yaml
+rules:
+  no-secrets:
+    enabled: true
+    exclude:
+      - "**/testdata/**"   # test fixtures such as dummy TLS keys
+      - "*_test.go"
+```
+
 ### Suppressing a false positive
 
-Add `archguard:ignore` anywhere on the line to skip `no-secrets` findings for that line only:
+To skip a whole file or directory for one rule, use that rule's `exclude` (above). To skip a single line, add `archguard:ignore` anywhere on that line (this works for `no-secrets` only):
 
 ```go
 const exampleKey = "..." // archguard:ignore — documented test fixture
@@ -118,9 +129,7 @@ ArchGuard reads `archguard.yaml` from the current directory (override with `--co
 ```yaml
 version: "v1"
 
-# Paths to exclude from scanning.
-#   - A pattern without "/" matches a file or directory name at any depth (glob syntax allowed).
-#   - A pattern with "/" is anchored at the project root.
+# Paths excluded from every rule (see "Path patterns" below).
 ignore:
   - "tmp"              # any directory or file named tmp
   - "*.gen.go"         # generated files
@@ -130,6 +139,7 @@ rules:
   no-secrets:
     enabled: true
     severity: ERROR
+    exclude: ["**/testdata/**"]   # per-rule exclude
 
   required-files:
     enabled: true
@@ -148,6 +158,18 @@ rules:
     severity: ERROR
     path: "docs/openapi.json"
 ```
+
+### Path patterns
+
+`ignore` and every rule's `exclude` use the same syntax:
+
+| Pattern | Matches |
+| :--- | :--- |
+| `testdata` | Pattern without `/`: any file or directory named `testdata`, at any depth |
+| `*_test.go` | Glob against each path segment |
+| `docs/generated` | Pattern with `/`: anchored at the project root, so this matches `docs/generated` and everything under it |
+| `**/testdata/**` | `**` matches zero or more directories |
+| `internal/**/fixtures` | `fixtures` anywhere under `internal/` |
 
 **Severities** are case-insensitive: `ERROR`, `WARNING` (or `WARN`), `INFO`. Only `ERROR` issues fail a scan. Omit `severity` to use the rule's default.
 
