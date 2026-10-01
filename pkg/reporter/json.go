@@ -22,6 +22,13 @@ func (j *JSONReporter) Report(w io.Writer, res *policy.ScanResult) error {
 		return fmt.Errorf("cannot format nil scan result")
 	}
 
+	// Always emit "issues": [] rather than null so consumers can iterate without a nil check.
+	if res.Issues == nil {
+		out := *res
+		out.Issues = []policy.Issue{}
+		res = &out
+	}
+
 	encoder := json.NewEncoder(w)
 	encoder.SetIndent("", "  ")
 	if err := encoder.Encode(res); err != nil {

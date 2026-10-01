@@ -15,6 +15,15 @@ type ParamSpec struct {
 	Description string
 }
 
+// ExcludeParam is accepted by every rule: a list of path patterns (see policy.MatchPath)
+// whose files the rule skips and whose issues are dropped.
+const ExcludeParam = "exclude"
+
+// CommonParams are accepted by every rule in addition to its own Params.
+var CommonParams = []ParamSpec{
+	{Name: ExcludeParam, Type: "list of strings", Description: "path patterns this rule skips, e.g. ['**/testdata/**', '*_test.go']"},
+}
+
 // Factory constructs a rule from its validated parameters and resolved severity.
 type Factory func(params Params, severity policy.Severity) (policy.Rule, error)
 
@@ -31,8 +40,8 @@ type Definition struct {
 // Build validates params against the definition and constructs the rule.
 // An empty severity falls back to DefaultSeverity.
 func (d Definition) Build(params map[string]any, severity policy.Severity) (policy.Rule, error) {
-	allowed := make(map[string]bool, len(d.Params))
-	for _, p := range d.Params {
+	allowed := make(map[string]bool, len(d.Params)+len(CommonParams))
+	for _, p := range append(append([]ParamSpec{}, d.Params...), CommonParams...) {
 		allowed[p.Name] = true
 	}
 	for key := range params {
@@ -41,25 +50,78 @@ func (d Definition) Build(params map[string]any, severity policy.Severity) (poli
 		}
 	}
 
+	p := Params{ruleID: d.ID, values: params}
+	exclude, err := p.StringSlice(ExcludeParam)
+	if err != nil {
+		return nil, fmt.Errorf("rule %q: %w", d.ID, err)
+	}
+	for _, pattern := range exclude {
+		if err := policy.ValidatePathPattern(pattern); err != nil {
+			return nil, fmt.Errorf("rule %q: %w", d.ID, err)
+		}
+	}
+
 	if severity == "" {
 		severity = d.DefaultSeverity
 	}
-	r, err := d.Factory(Params{ruleID: d.ID, values: params}, severity)
+	r, err := d.Factory(p, severity)
 	if err != nil {
 		return nil, fmt.Errorf("rule %q: %w", d.ID, err)
+	}
+	if len(exclude) > 0 {
+		r = &excludingRule{Rule: r, patterns: exclude}
 	}
 	return r, nil
 }
 
 func (d Definition) paramNames() string {
-	if len(d.Params) == 0 {
-		return "none"
+	names := make([]string, 0, len(d.Params)+len(CommonParams))
+	for _, p := range d.Params {
+		names = append(names, p.Name)
 	}
-	names := make([]string, len(d.Params))
-	for i, p := range d.Params {
-		names[i] = p.Name
+	for _, p := range CommonParams {
+		names = append(names, p.Name)
 	}
 	return strings.Join(names, ", ")
+}
+
+// excludingRule hides excluded files from the wrapped rule and drops issues reported on them.
+type excludingRule struct {
+	policy.Rule
+	patterns []string
+}
+
+func (r *excludingRule) excluded(rel string) bool {
+	for _, p := range r.patterns {
+		if policy.MatchPath(p, rel) {
+			return true
+		}
+	}
+	return false
+}
+
+// Run executes the wrapped rule against the non-excluded files only.
+func (r *excludingRule) Run(ctx *policy.ScanContext) ([]policy.Issue, error) {
+	scoped := *ctx
+	scoped.Files = make([]string, 0, len(ctx.Files))
+	for _, f := range ctx.Files {
+		if !r.excluded(f) {
+			scoped.Files = append(scoped.Files, f)
+		}
+	}
+
+	issues, err := r.Rule.Run(&scoped)
+	if err != nil {
+		return nil, err
+	}
+
+	kept := issues[:0]
+	for _, issue := range issues {
+		if !r.excluded(issue.FilePath) {
+			kept = append(kept, issue)
+		}
+	}
+	return kept, nil
 }
 
 // Registry holds rule definitions keyed by rule ID.

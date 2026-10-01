@@ -21,6 +21,8 @@ rules:
   no-secrets:
     enabled: true
     severity: ERROR
+    exclude:
+      - "pkg/rule/no_secrets_test.go" # fixtures that must look like real secrets
 
   # 3. Mandatory Files Check
   required-files:

@@ -72,3 +72,28 @@ func TestFileNamingRule_SuggestionReflectsCustomPattern(t *testing.T) {
 		t.Errorf("expected suggestion to mention the configured pattern, got %q", issues[0].Suggestion)
 	}
 }
+
+func TestFileNamingRule_AllowsConventionalNames(t *testing.T) {
+	r, err := rule.NewFileNamingRule(`^[a-z0-9._-]+$`, policy.SeverityWarning)
+	if err != nil {
+		t.Fatal(err)
+	}
+	allowed := []string{
+		"README.md", "docs/README.md", "LICENSE", "LICENSE.txt", "Makefile", "Dockerfile",
+		"Dockerfile.dev", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md",
+		"CHANGELOG.md", "MAINTAINERS", "CITATION.cff", ".github/PULL_REQUEST_TEMPLATE.md",
+	}
+	violating := []string{"READMEFILE.md", "MyComponent.go", "assets/CobraMain.png"}
+
+	issues, err := r.Run(policy.NewScanContext(context.Background(), ".", append(allowed, violating...)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, i := range issues {
+		got = append(got, i.FilePath)
+	}
+	if strings.Join(got, ",") != strings.Join(violating, ",") {
+		t.Errorf("flagged %v, want only %v", got, violating)
+	}
+}

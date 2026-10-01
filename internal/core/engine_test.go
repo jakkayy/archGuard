@@ -145,3 +145,17 @@ func TestEngine_Run_StopsWhenContextCancelled(t *testing.T) {
 		t.Fatal("expected error for cancelled context, got nil")
 	}
 }
+
+func TestEngine_Run_NoIssuesReturnsEmptySlice(t *testing.T) {
+	eng := core.NewEngine()
+	eng.RegisterRule(&mockRule{id: "rule-a", severity: policy.SeverityError})
+	cfg := &config.Config{Rules: map[string]config.RuleConfig{"rule-a": {Enabled: true}}}
+
+	res, err := eng.Run(context.Background(), t.TempDir(), cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Issues == nil {
+		t.Error("expected non-nil empty Issues slice")
+	}
+}

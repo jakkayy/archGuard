@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/jakkayy/archGuard/pkg/policy"
 )
 
 // RuleConfig represents the configuration settings for an individual rule.
@@ -82,6 +84,12 @@ func (c *Config) Validate() error {
 	}
 	if c.Version != SupportedVersion {
 		return fmt.Errorf("unsupported config version %q (expected %q)", c.Version, SupportedVersion)
+	}
+
+	for _, pattern := range c.Ignore {
+		if err := policy.ValidatePathPattern(pattern); err != nil {
+			return fmt.Errorf("ignore: %w", err)
+		}
 	}
 
 	ids := make([]string, 0, len(c.Rules))

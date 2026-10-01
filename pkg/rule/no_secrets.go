@@ -14,6 +14,22 @@ type secretPattern struct {
 	name        string
 	regex       *regexp.Regexp
 	description string
+	// valueGroup, when > 0, is the capture group holding the assigned value; matches whose
+	// value is clearly not a secret (see isNonSecretValue) are skipped.
+	valueGroup int
+}
+
+// envVarName matches upper-case identifiers with at least one underscore, e.g.
+// TENCENTCLOUD_SECRET_KEY: the value names an environment variable rather than holding a secret.
+var envVarName = regexp.MustCompile(`^[A-Z][A-Z0-9]*(_[A-Z0-9]+)+$`)
+
+// isNonSecretValue reports whether an assigned value is an env var name or a
+// single repeated character placeholder such as "xxxxxxxxxxxxxxxx".
+func isNonSecretValue(v string) bool {
+	if envVarName.MatchString(v) {
+		return true
+	}
+	return strings.Count(v, v[:1]) == len(v)
 }
 
 // NoSecretsRule scans project files for hardcoded API keys, tokens, and credentials.
@@ -49,8 +65,9 @@ func NewNoSecretsRule(severity policy.Severity) *NoSecretsRule {
 		},
 		{
 			name:        "Hardcoded API Secret",
-			regex:       regexp.MustCompile(`(?i)(api_key|apikey|secret_key|private_key|auth_token|access_token|client_secret)\s*[:=]\s*["'][a-zA-Z0-9_\-]{16,}["']`),
+			regex:       regexp.MustCompile(`(?i)(api_key|apikey|secret_key|private_key|auth_token|access_token|client_secret)\s*[:=]\s*["']([a-zA-Z0-9_\-]{16,})["']`),
 			description: "Potential hardcoded API key or secret token detected",
+			valueGroup:  2,
 		},
 		{
 			name:        "Generic Bearer Token",
@@ -123,7 +140,7 @@ func (r *NoSecretsRule) Run(ctx *policy.ScanContext) ([]policy.Issue, error) {
 				continue
 			}
 			for _, p := range r.patterns {
-				if p.regex.MatchString(line) {
+				if p.matches(line) {
 					issues = append(issues, policy.Issue{
 						RuleID:     r.id,
 						FilePath:   relPath,
@@ -138,6 +155,18 @@ func (r *NoSecretsRule) Run(ctx *policy.ScanContext) ([]policy.Issue, error) {
 	}
 
 	return issues, nil
+}
+
+func (p secretPattern) matches(line string) bool {
+	if p.valueGroup == 0 {
+		return p.regex.MatchString(line)
+	}
+	for _, m := range p.regex.FindAllStringSubmatch(line, -1) {
+		if !isNonSecretValue(m[p.valueGroup]) {
+			return true
+		}
+	}
+	return false
 }
 
 // isBinary reports whether content looks like a binary file (contains a NUL byte in its first 8KB).

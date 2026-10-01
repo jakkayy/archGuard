@@ -6,10 +6,11 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/jakkayy/archGuard/pkg/policy"
 )
 
 // alwaysIgnoredDirs are tool/cache directories skipped at any depth.
@@ -119,10 +120,8 @@ func walkFiles(rootDir string) ([]string, error) {
 	return files, err
 }
 
-// isIgnored applies the built-in directory ignores and the user's ignore patterns to a
-// slash-separated relative path. A pattern without "/" matches any path segment (glob
-// syntax allowed, e.g. "*.gen.go" or "tmp"); a pattern containing "/" is anchored at the
-// project root and matches that path or anything beneath it (e.g. "docs/generated").
+// isIgnored applies the built-in directory ignores and the user's ignore patterns
+// (see policy.MatchPath for pattern syntax) to a slash-separated relative path.
 func isIgnored(rel string, patterns []string) bool {
 	segments := strings.Split(rel, "/")
 	dirs := segments[:len(segments)-1]
@@ -133,30 +132,10 @@ func isIgnored(rel string, patterns []string) bool {
 		}
 	}
 
-	for _, raw := range patterns {
-		pattern := strings.Trim(strings.TrimSpace(raw), "/")
-		if pattern == "" {
-			continue
-		}
-
-		if !strings.Contains(pattern, "/") {
-			for _, seg := range segments {
-				if ok, _ := path.Match(pattern, seg); ok {
-					return true
-				}
-			}
-			continue
-		}
-
-		depth := strings.Count(pattern, "/") + 1
-		if depth > len(segments) {
-			continue
-		}
-		prefix := strings.Join(segments[:depth], "/")
-		if ok, _ := path.Match(pattern, prefix); ok {
+	for _, pattern := range patterns {
+		if policy.MatchPath(pattern, rel) {
 			return true
 		}
 	}
-
 	return false
 }

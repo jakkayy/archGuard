@@ -113,3 +113,27 @@ func TestNoSecretsRule_DetectsGitHubToken(t *testing.T) {
 		t.Errorf("expected GitHub token to be detected, got %d issues", len(issues))
 	}
 }
+
+func TestNoSecretsRule_SkipsNonSecretAssignedValues(t *testing.T) {
+	for name, line := range map[string]string{
+		"env var name":       `PROVIDER_SECRET_KEY = "TENCENTCLOUD_SECRET_KEY"`,
+		"repeated character": `api_key: "xxxxxxxxxxxxxxxxxxxx"`,
+	} {
+		if issues := runNoSecrets(t, "cfg.go", line+"\n"); len(issues) != 0 {
+			t.Errorf("%s: expected no issues, got %+v", name, issues)
+		}
+	}
+}
+
+func TestNoSecretsRule_StillFlagsRealLookingValues(t *testing.T) {
+	for name, line := range map[string]string{
+		"hex secret":                 `SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4c"`,
+		"upper-case base32 no _":     `secret_key = "JBSWY3DPEHPK3PXPJBSWY3DP"`,
+		"second assignment on line":  `api_key: "API_KEY_NAME", secret_key: "s3cr3tV4lu3s3cr3tV4lu3"`,
+		"mixed-case with underscore": `auth_token = "Abc_def_ghi_jkl_mno_pqr"`,
+	} {
+		if issues := runNoSecrets(t, "cfg.go", line+"\n"); len(issues) != 1 {
+			t.Errorf("%s: expected 1 issue, got %d", name, len(issues))
+		}
+	}
+}

@@ -1,0 +1,31 @@
+name: Real-World Smoke Test
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 1' # every Monday 03:00 UTC
+  pull_request:
+    paths:
+      - 'pkg/rule/**'
+      - 'internal/core/**'
+      - 'scripts/smoke-realworld.sh'
+      - 'testdata/smoke/**'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Scan pinned open-source repositories
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go Environment
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Run smoke test
+        run: scripts/smoke-realworld.sh
