@@ -19,7 +19,7 @@ var conventionalNames = []string{
 	"README", "LICENSE", "LICENCE", "COPYING", "NOTICE", "AUTHORS", "CONTRIBUTORS",
 	"MAINTAINERS", "CODEOWNERS", "OWNERS", "CHANGELOG", "CHANGES", "HISTORY", "RELEASE_NOTES",
 	"CONTRIBUTING", "CODE_OF_CONDUCT", "CONDUCT", "SECURITY", "SUPPORT", "GOVERNANCE",
-	"FUNDING", "PULL_REQUEST_TEMPLATE", "ISSUE_TEMPLATE",
+	"FUNDING", "CITATION", "PULL_REQUEST_TEMPLATE", "ISSUE_TEMPLATE",
 	"Makefile", "GNUmakefile", "Dockerfile", "Containerfile", "Jenkinsfile", "Vagrantfile",
 	"Procfile", "Gemfile", "Rakefile", "Brewfile", "Pipfile", "Justfile", "Tiltfile",
 }

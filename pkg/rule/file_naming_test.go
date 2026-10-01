@@ -81,7 +81,7 @@ func TestFileNamingRule_AllowsConventionalNames(t *testing.T) {
 	allowed := []string{
 		"README.md", "docs/README.md", "LICENSE", "LICENSE.txt", "Makefile", "Dockerfile",
 		"Dockerfile.dev", "CONTRIBUTING.md", "CODE_OF_CONDUCT.md", "SECURITY.md",
-		"CHANGELOG.md", "MAINTAINERS", ".github/PULL_REQUEST_TEMPLATE.md",
+		"CHANGELOG.md", "MAINTAINERS", "CITATION.cff", ".github/PULL_REQUEST_TEMPLATE.md",
 	}
 	violating := []string{"READMEFILE.md", "MyComponent.go", "assets/CobraMain.png"}
 
