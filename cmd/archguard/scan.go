@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -22,7 +22,12 @@ var scanCmd = &cobra.Command{
 	Use:   "scan",
 	Short: "Scan project for engineering policy violations",
 	Long:  `Scans project files against rules defined in archguard.yaml and outputs a compliance report.`,
+	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if !isValidFormat(formatFlag) {
+			return fmt.Errorf("unsupported --format %q (allowed: %s)", formatFlag, strings.Join(supportedFormats, ", "))
+		}
+
 		cfg, err := config.Load(configPath)
 		if err != nil {
 			return fmt.Errorf("scan failed: %w", err)
@@ -48,16 +53,27 @@ var scanCmd = &cobra.Command{
 			rep = reporter.NewConsoleReporter(noColor)
 		}
 
-		if err := rep.Report(os.Stdout, res); err != nil {
+		if err := rep.Report(cmd.OutOrStdout(), res); err != nil {
 			return fmt.Errorf("failed to format report: %w", err)
 		}
 
 		if !res.Passed {
-			os.Exit(1)
+			return errPolicyFailed
 		}
 
 		return nil
 	},
+}
+
+var supportedFormats = []string{"console", "json", "sarif"}
+
+func isValidFormat(f string) bool {
+	for _, s := range supportedFormats {
+		if f == s {
+			return true
+		}
+	}
+	return false
 }
 
 // buildEngine registers every built-in rule, configured with params from cfg when present.

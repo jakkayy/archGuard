@@ -88,6 +88,14 @@ archguard scan
 | `archguard rules` | แสดงรายการ Built-in Policy Rules ทั้งหมดพร้อมคำอธิบายและพารามิเตอร์ | N/A |
 | `archguard install-hook` | ติดตั้งระบบ Pre-commit Hook อัตโนมัติไว้ที่ `.git/hooks/pre-commit` | N/A |
 
+**Exit codes ของ `archguard scan`:**
+
+| Code | ความหมาย |
+| :--- | :--- |
+| `0` | ผ่าน (ไม่มี ERROR-level violation) |
+| `1` | พบ ERROR-level policy violation |
+| `2` | ใช้งานผิด / config ไม่ถูกต้อง / เกิดข้อผิดพลาดระหว่างรัน |
+
 ---
 
 ## ⚙️ Configuration Reference (`archguard.yaml`)
