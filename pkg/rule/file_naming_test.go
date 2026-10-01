@@ -15,7 +15,7 @@ func TestFileNamingRule_ValidFiles(t *testing.T) {
 		t.Fatalf("failed to create rule: %v", err)
 	}
 
-	ctx := policy.NewScanContext(nil, ".", []string{
+	ctx := policy.NewScanContext(context.Background(), ".", []string{
 		"main.go",
 		"file_naming.go",
 		"config-file.yaml",
@@ -37,7 +37,7 @@ func TestFileNamingRule_InvalidFiles(t *testing.T) {
 		t.Fatalf("failed to create rule: %v", err)
 	}
 
-	ctx := policy.NewScanContext(nil, ".", []string{
+	ctx := policy.NewScanContext(context.Background(), ".", []string{
 		"InvalidFileName.go",
 		"bad file name.ts",
 	})

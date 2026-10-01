@@ -1,6 +1,7 @@
 package rule_test
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -22,7 +23,7 @@ func TestOpenAPIExistsRule_FileExists(t *testing.T) {
 	}
 
 	r := rule.NewOpenAPIExistsRule(specPath, policy.SeverityError)
-	ctx := policy.NewScanContext(nil, tempDir, []string{})
+	ctx := policy.NewScanContext(context.Background(), tempDir, []string{})
 
 	issues, err := r.Run(ctx)
 	if err != nil {
@@ -39,7 +40,7 @@ func TestOpenAPIExistsRule_FileMissing(t *testing.T) {
 	specPath := "docs/non_existent.json"
 
 	r := rule.NewOpenAPIExistsRule(specPath, policy.SeverityError)
-	ctx := policy.NewScanContext(nil, tempDir, []string{})
+	ctx := policy.NewScanContext(context.Background(), tempDir, []string{})
 
 	issues, err := r.Run(ctx)
 	if err != nil {

@@ -3,6 +3,7 @@ package policy
 // Severity represents the severity level of an architectural or policy violation.
 type Severity string
 
+// Supported severities. Only SeverityError causes a scan to fail.
 const (
 	SeverityError   Severity = "ERROR"
 	SeverityWarning Severity = "WARNING"

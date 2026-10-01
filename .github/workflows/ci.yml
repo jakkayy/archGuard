@@ -35,8 +35,13 @@ jobs:
           fi
           go vet ./...
 
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.14.0
+
       - name: Run Unit Tests
-        run: go test -v ./...
+        run: go test -race -coverprofile=coverage.out ./...
 
       - name: Build ArchGuard Executable Binary
         run: go build -o bin/archguard ./cmd/archguard
