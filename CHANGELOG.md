@@ -3,6 +3,19 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] - Unreleased
+
+### Added
+- `exclude` parameter on every rule: path patterns the rule skips, e.g. `["**/testdata/**", "*_test.go"]`.
+- `**` support in `ignore` and `exclude` patterns.
+- Real-world smoke test (`scripts/smoke-realworld.sh`) against pinned commits of cobra, gin, FastAPI, Vercel Commerce and Terraform, run weekly in CI.
+- CI runs tests and the self-scan on macOS and Windows.
+
+### Fixed
+- JSON output emitted `"issues": null` when there were no issues; it is now `[]`.
+- `no-secrets` flagged assignments whose value is an environment variable name (e.g. `SECRET_KEY = "TENCENTCLOUD_SECRET_KEY"`) or a repeated-character placeholder.
+- `file-naming` flagged conventional names such as `README.md`, `LICENSE`, `Makefile`, `Dockerfile` and `CITATION.cff` under strict lower-case patterns.
+
 ## [1.0.0] - 2026-10-01
 
 ### Breaking changes
