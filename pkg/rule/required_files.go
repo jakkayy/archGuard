@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/archguard/archguard/internal/core"
+	"github.com/jakkayy/archGuard/pkg/policy"
 )
 
 // RequiredFilesRule validates that designated mandatory files exist in the project.
@@ -13,17 +13,17 @@ type RequiredFilesRule struct {
 	id            string
 	name          string
 	description   string
-	severity      core.Severity
+	severity      policy.Severity
 	requiredFiles []string
 }
 
 // NewRequiredFilesRule initializes a RequiredFilesRule with target required files and severity.
-func NewRequiredFilesRule(files []string, severity core.Severity) *RequiredFilesRule {
+func NewRequiredFilesRule(files []string, severity policy.Severity) *RequiredFilesRule {
 	if len(files) == 0 {
 		files = []string{"README.md"}
 	}
 	if severity == "" {
-		severity = core.SeverityError
+		severity = policy.SeverityError
 	}
 
 	return &RequiredFilesRule{
@@ -51,19 +51,19 @@ func (r *RequiredFilesRule) Description() string {
 }
 
 // Severity returns the severity level of rule violations.
-func (r *RequiredFilesRule) Severity() core.Severity {
+func (r *RequiredFilesRule) Severity() policy.Severity {
 	return r.severity
 }
 
 // Run executes the required files check against the workspace.
-func (r *RequiredFilesRule) Run(ctx *core.ScanContext) ([]core.Issue, error) {
-	var issues []core.Issue
+func (r *RequiredFilesRule) Run(ctx *policy.ScanContext) ([]policy.Issue, error) {
+	var issues []policy.Issue
 
 	for _, relPath := range r.requiredFiles {
 		fullPath := filepath.Join(ctx.WorkingDir, relPath)
 		info, err := os.Stat(fullPath)
 		if os.IsNotExist(err) || (err == nil && info.IsDir()) {
-			issues = append(issues, core.Issue{
+			issues = append(issues, policy.Issue{
 				RuleID:     r.id,
 				FilePath:   relPath,
 				Message:    fmt.Sprintf("required file '%s' was not found in the workspace", relPath),

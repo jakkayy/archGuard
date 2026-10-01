@@ -23,15 +23,31 @@ jobs:
       - name: Setup Go Environment
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version-file: go.mod
 
       - name: Verify Go Code Formatting & Vet
         run: |
-          gofmt -s -l .
+          unformatted="$(gofmt -s -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "The following files are not gofmt-formatted:"
+            echo "$unformatted"
+            exit 1
+          fi
           go vet ./...
 
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.14.0
+
       - name: Run Unit Tests
-        run: go test -v ./...
+        run: go test -race -coverprofile=coverage.out ./...
+
+      - name: Enforce Coverage Threshold (80%)
+        run: |
+          total=$(go tool cover -func=coverage.out | awk '/^total:/ {sub("%", "", $3); print $3}')
+          echo "### Test coverage: ${total}%" >> "$GITHUB_STEP_SUMMARY"
+          awk -v t="$total" 'BEGIN { exit (t < 80) }' || { echo "Coverage ${total}% is below 80%"; exit 1; }
 
       - name: Build ArchGuard Executable Binary
         run: go build -o bin/archguard ./cmd/archguard
@@ -49,3 +65,31 @@ jobs:
         continue-on-error: true
         with:
           sarif_file: archguard-results.sarif
+
+  action-self-test:
+    name: Test Reusable GitHub Action
+    runs-on: ubuntu-latest
+    needs: test-and-scan
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go Environment
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build ArchGuard into PATH
+        run: |
+          go build -o "$RUNNER_TEMP/bin/archguard" ./cmd/archguard
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+      - name: Run action against this repository
+        id: archguard
+        uses: ./
+        with:
+          version: preinstalled
+          upload-sarif: "false"
+
+      - name: Assert action passed
+        run: test "${{ steps.archguard.outputs.exit-code }}" = "0"

@@ -1,12 +1,13 @@
 package rule_test
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/archguard/archguard/internal/core"
-	"github.com/archguard/archguard/pkg/rule"
+	"github.com/jakkayy/archGuard/pkg/policy"
+	"github.com/jakkayy/archGuard/pkg/rule"
 )
 
 func TestOpenAPIExistsRule_FileExists(t *testing.T) {
@@ -21,8 +22,8 @@ func TestOpenAPIExistsRule_FileExists(t *testing.T) {
 		t.Fatalf("failed to create temp spec file: %v", err)
 	}
 
-	r := rule.NewOpenAPIExistsRule(specPath, core.SeverityError)
-	ctx := core.NewScanContext(nil, tempDir, []string{})
+	r := rule.NewOpenAPIExistsRule(specPath, policy.SeverityError)
+	ctx := policy.NewScanContext(context.Background(), tempDir, []string{})
 
 	issues, err := r.Run(ctx)
 	if err != nil {
@@ -38,8 +39,8 @@ func TestOpenAPIExistsRule_FileMissing(t *testing.T) {
 	tempDir := t.TempDir()
 	specPath := "docs/non_existent.json"
 
-	r := rule.NewOpenAPIExistsRule(specPath, core.SeverityError)
-	ctx := core.NewScanContext(nil, tempDir, []string{})
+	r := rule.NewOpenAPIExistsRule(specPath, policy.SeverityError)
+	ctx := policy.NewScanContext(context.Background(), tempDir, []string{})
 
 	issues, err := r.Run(ctx)
 	if err != nil {
@@ -50,7 +51,7 @@ func TestOpenAPIExistsRule_FileMissing(t *testing.T) {
 		t.Fatalf("expected 1 issue when spec is missing, got %d", len(issues))
 	}
 
-	if issues[0].Severity != core.SeverityError {
+	if issues[0].Severity != policy.SeverityError {
 		t.Errorf("expected severity ERROR, got %s", issues[0].Severity)
 	}
 }

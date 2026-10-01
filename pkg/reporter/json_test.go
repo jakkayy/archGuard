@@ -5,17 +5,17 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/archguard/archguard/internal/core"
-	"github.com/archguard/archguard/pkg/reporter"
+	"github.com/jakkayy/archGuard/pkg/policy"
+	"github.com/jakkayy/archGuard/pkg/reporter"
 )
 
 func TestJSONReporter_Report(t *testing.T) {
 	rep := reporter.NewJSONReporter()
 
-	res := &core.ScanResult{
+	res := &policy.ScanResult{
 		ScanTimeMs: 20,
 		Passed:     true,
-		Issues:     []core.Issue{},
+		Issues:     []policy.Issue{},
 	}
 
 	var buf bytes.Buffer
@@ -24,7 +24,7 @@ func TestJSONReporter_Report(t *testing.T) {
 		t.Fatalf("unexpected error from json reporter: %v", err)
 	}
 
-	var decoded core.ScanResult
+	var decoded policy.ScanResult
 	if err := json.Unmarshal(buf.Bytes(), &decoded); err != nil {
 		t.Fatalf("failed to parse generated json output: %v", err)
 	}

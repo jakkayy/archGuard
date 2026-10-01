@@ -5,22 +5,22 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/archguard/archguard/internal/core"
-	"github.com/archguard/archguard/pkg/reporter"
+	"github.com/jakkayy/archGuard/pkg/policy"
+	"github.com/jakkayy/archGuard/pkg/reporter"
 )
 
 func TestConsoleReporter_Report(t *testing.T) {
 	rep := reporter.NewConsoleReporter(true)
 
-	res := &core.ScanResult{
+	res := &policy.ScanResult{
 		ScanTimeMs: 15,
 		Passed:     false,
-		Issues: []core.Issue{
+		Issues: []policy.Issue{
 			{
 				RuleID:     "naming/file-convention",
 				FilePath:   "BadName.go",
 				Message:    "invalid filename",
-				Severity:   core.SeverityError,
+				Severity:   policy.SeverityError,
 				Suggestion: "use snake_case",
 			},
 		},

@@ -2,72 +2,60 @@ package main
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 
-	"github.com/archguard/archguard/internal/core"
-	"github.com/archguard/archguard/pkg/rule"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
+
+	"github.com/jakkayy/archGuard/pkg/policy"
+	"github.com/jakkayy/archGuard/pkg/rule"
 )
 
 var rulesCmd = &cobra.Command{
 	Use:   "rules",
 	Short: "List all available policy rules in ArchGuard",
 	Long:  `Displays a detailed catalog of all built-in engineering policy rules supported by ArchGuard.`,
+	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		engine := core.NewEngine()
-
-		fileNaming, err := rule.NewFileNamingRule("", core.SeverityWarning)
-		if err == nil {
-			engine.RegisterRule(fileNaming)
-		}
-		engine.RegisterRule(rule.NewOpenAPIExistsRule("", core.SeverityError))
-		engine.RegisterRule(rule.NewRequiredFilesRule([]string{"README.md"}, core.SeverityError))
-		engine.RegisterRule(rule.NewNoSecretsRule(core.SeverityError))
-
-		rules := engine.Rules()
-		sort.Slice(rules, func(i, j int) bool {
-			return rules[i].ID() < rules[j].ID()
-		})
+		out := cmd.OutOrStdout()
+		defs := rule.Builtins().Definitions()
 
 		boldCyan := color.New(color.Bold, color.FgCyan).SprintFunc()
 		boldYellow := color.New(color.Bold, color.FgYellow).SprintFunc()
 		boldRed := color.New(color.Bold, color.FgRed).SprintFunc()
 		bold := color.New(color.Bold).SprintFunc()
 
-		fmt.Printf("\n🛡️  %s\n", boldCyan("ArchGuard Available Policy Rules"))
-		fmt.Println(strings.Repeat("─", 65))
+		fmt.Fprintf(out, "\n🛡️  %s\n", boldCyan("ArchGuard Available Policy Rules"))
+		fmt.Fprintln(out, strings.Repeat("─", 65))
 
-		for i, r := range rules {
+		for i, d := range defs {
 			var sevBadge string
-			switch r.Severity() {
-			case core.SeverityError:
+			switch d.DefaultSeverity {
+			case policy.SeverityError:
 				sevBadge = boldRed("ERROR")
-			case core.SeverityWarning:
-				sevBadge = boldYellow("WARN")
+			case policy.SeverityWarning:
+				sevBadge = boldYellow("WARNING")
 			default:
 				sevBadge = bold("INFO")
 			}
 
-			fmt.Printf("%d. [%s] %s\n", i+1, boldCyan(r.ID()), bold(r.Name()))
-			fmt.Printf("   • Description: %s\n", r.Description())
-			fmt.Printf("   • Default Severity: %s\n", sevBadge)
-
-			switch r.ID() {
-			case "file-naming":
-				fmt.Printf("   • Parameters:       %s (string, regex pattern)\n", bold("pattern"))
-			case "openapi-exists":
-				fmt.Printf("   • Parameters:       %s (string, target file path)\n", bold("path"))
-			case "required-files":
-				fmt.Printf("   • Parameters:       %s (array of strings, e.g., ['README.md', '.gitignore'])\n", bold("files"))
-			case "no-secrets":
-				fmt.Printf("   • Parameters:       (None required)\n")
+			fmt.Fprintf(out, "%d. [%s] %s\n", i+1, boldCyan(d.ID), bold(d.Name))
+			fmt.Fprintf(out, "   • Description:      %s\n", d.Description)
+			fmt.Fprintf(out, "   • Default Severity: %s\n", sevBadge)
+			if len(d.Params) == 0 {
+				fmt.Fprintln(out, "   • Parameters:       (none)")
 			}
-			fmt.Println()
+			for j, p := range d.Params {
+				label := "   • Parameters:      "
+				if j > 0 {
+					label = "                      "
+				}
+				fmt.Fprintf(out, "%s %s (%s) - %s\n", label, bold(p.Name), p.Type, p.Description)
+			}
+			fmt.Fprintln(out)
 		}
 
-		fmt.Printf("Total Available Rules: %d\n\n", len(rules))
+		fmt.Fprintf(out, "Total Available Rules: %d\n\n", len(defs))
 		return nil
 	},
 }

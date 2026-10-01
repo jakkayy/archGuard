@@ -1,0 +1,101 @@
+name: ArchGuard Policy Scan
+description: Enforce engineering policies (secrets, naming, required files, OpenAPI spec) with ArchGuard
+author: jakkayy
+branding:
+  icon: shield
+  color: blue
+
+inputs:
+  version:
+    description: ArchGuard release tag to install (e.g. v0.5.0), "latest", or "preinstalled" to use an archguard already on PATH
+    default: latest
+  config:
+    description: Path to archguard.yaml, relative to working-directory
+    default: archguard.yaml
+  working-directory:
+    description: Directory to scan
+    default: .
+  upload-sarif:
+    description: Upload results to GitHub code scanning (requires security-events write permission)
+    default: "true"
+  fail-on-violation:
+    description: Fail the job when ERROR-level violations are found
+    default: "true"
+
+outputs:
+  exit-code:
+    description: "archguard scan exit code: 0 = passed, 1 = violations, 2 = error"
+    value: ${{ steps.scan.outputs.exit-code }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install ArchGuard
+      if: ${{ inputs.version != 'preinstalled' }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        AG_VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        case "${RUNNER_OS}" in
+          Linux)   os=linux ;;
+          macOS)   os=darwin ;;
+          Windows) os=windows ;;
+          *) echo "Unsupported runner OS: ${RUNNER_OS}"; exit 1 ;;
+        esac
+        case "${RUNNER_ARCH}" in
+          X64)   arch=amd64 ;;
+          ARM64) arch=arm64 ;;
+          *) echo "Unsupported runner arch: ${RUNNER_ARCH}"; exit 1 ;;
+        esac
+
+        tag="${AG_VERSION}"
+        if [ "${tag}" = "latest" ]; then
+          tag="$(gh release view --repo jakkayy/archGuard --json tagName --jq .tagName)"
+        fi
+        ext=tar.gz; [ "${os}" = windows ] && ext=zip
+        asset="archguard_${tag#v}_${os}_${arch}.${ext}"
+
+        dest="${RUNNER_TEMP}/archguard"
+        mkdir -p "${dest}"
+        gh release download "${tag}" --repo jakkayy/archGuard --pattern "${asset}" --dir "${dest}" --clobber
+        if [ "${ext}" = zip ]; then unzip -o -q "${dest}/${asset}" -d "${dest}"; else tar -xzf "${dest}/${asset}" -C "${dest}"; fi
+        echo "${dest}" >> "${GITHUB_PATH}"
+        echo "Installed ArchGuard ${tag} (${os}/${arch})"
+
+    - name: Run ArchGuard scan
+      id: scan
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        AG_CONFIG: ${{ inputs.config }}
+        AG_UPLOAD: ${{ inputs.upload-sarif }}
+      run: |
+        set +e
+        archguard scan --config "${AG_CONFIG}"
+        code=$?
+        if [ "${AG_UPLOAD}" = "true" ] && [ "${code}" -ne 2 ]; then
+          archguard scan --config "${AG_CONFIG}" --format sarif > "${RUNNER_TEMP}/archguard.sarif"
+        fi
+        echo "exit-code=${code}" >> "${GITHUB_OUTPUT}"
+
+    - name: Upload SARIF to code scanning
+      if: ${{ always() && inputs.upload-sarif == 'true' && steps.scan.outputs.exit-code != '2' }}
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ runner.temp }}/archguard.sarif
+        category: archguard
+
+    - name: Check result
+      shell: bash
+      env:
+        AG_CODE: ${{ steps.scan.outputs.exit-code }}
+        AG_FAIL: ${{ inputs.fail-on-violation }}
+      run: |
+        if [ "${AG_CODE}" = "2" ]; then
+          echo "::error::ArchGuard failed to run (invalid config or usage error)"; exit 2
+        fi
+        if [ "${AG_CODE}" = "1" ] && [ "${AG_FAIL}" = "true" ]; then
+          echo "::error::ArchGuard found ERROR-level policy violations"; exit 1
+        fi

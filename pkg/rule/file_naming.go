@@ -6,25 +6,28 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/archguard/archguard/internal/core"
+	"github.com/jakkayy/archGuard/pkg/policy"
 )
+
+// DefaultFileNamingPattern is used when no pattern is configured.
+const DefaultFileNamingPattern = `^[a-z0-9._-]+$`
 
 // FileNamingRule validates project filenames against a specified regex pattern.
 type FileNamingRule struct {
 	id          string
 	name        string
 	description string
-	severity    core.Severity
+	severity    policy.Severity
 	pattern     *regexp.Regexp
 }
 
 // NewFileNamingRule initializes a FileNamingRule with a regex pattern and default severity.
-func NewFileNamingRule(patternStr string, severity core.Severity) (*FileNamingRule, error) {
+func NewFileNamingRule(patternStr string, severity policy.Severity) (*FileNamingRule, error) {
 	if patternStr == "" {
-		patternStr = `^[a-z0-9._-]+$`
+		patternStr = DefaultFileNamingPattern
 	}
 	if severity == "" {
-		severity = core.SeverityWarning
+		severity = policy.SeverityWarning
 	}
 
 	re, err := regexp.Compile(patternStr)
@@ -57,13 +60,13 @@ func (r *FileNamingRule) Description() string {
 }
 
 // Severity returns the severity level of rule violations.
-func (r *FileNamingRule) Severity() core.Severity {
+func (r *FileNamingRule) Severity() policy.Severity {
 	return r.severity
 }
 
 // Run executes the file naming validation against the files in ScanContext.
-func (r *FileNamingRule) Run(ctx *core.ScanContext) ([]core.Issue, error) {
-	var issues []core.Issue
+func (r *FileNamingRule) Run(ctx *policy.ScanContext) ([]policy.Issue, error) {
+	var issues []policy.Issue
 
 	for _, relPath := range ctx.Files {
 		baseName := filepath.Base(relPath)
@@ -74,12 +77,12 @@ func (r *FileNamingRule) Run(ctx *core.ScanContext) ([]core.Issue, error) {
 		}
 
 		if !r.pattern.MatchString(baseName) {
-			issues = append(issues, core.Issue{
+			issues = append(issues, policy.Issue{
 				RuleID:     r.id,
 				FilePath:   relPath,
 				Message:    fmt.Sprintf("filename '%s' does not match pattern '%s'", baseName, r.pattern.String()),
 				Severity:   r.severity,
-				Suggestion: "Rename file using lowercase alphanumeric characters, underscores, or hyphens",
+				Suggestion: fmt.Sprintf("Rename the file so its name matches the configured pattern %s", r.pattern.String()),
 			})
 		}
 	}

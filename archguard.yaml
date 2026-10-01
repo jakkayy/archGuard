@@ -1,23 +1,38 @@
 version: "v1"
 
 # ----------------------------------------------------
-# 📂 Ignore Directories (ข้ามโฟลเดอร์ที่ไม่ต้องการตรวจ)
+# 📂 Ignore Paths (ข้ามไฟล์/โฟลเดอร์ที่ไม่ต้องการตรวจ)
 # ----------------------------------------------------
 # ignore:
-#   - "custom_build"
 #   - "tmp"
+#   - "*.gen.go"
 
 # ----------------------------------------------------
 # 🛡️ Engineering Policies Rules
 # ----------------------------------------------------
 rules:
-  # 1. File Naming Policy (เปิดไว้เป็นค่าเริ่มต้นสำหรับทุกโปรเจกต์)
+  # 1. File Naming Policy
   file-naming:
     enabled: true
     severity: WARNING
     pattern: "^[a-zA-Z0-9._-]+$"
 
-  # 2. OpenAPI Spec Policy (เปิดเป็น true เฉพาะโปรเจกต์ที่เป็น REST API Service)
+  # 2. No Hardcoded Secrets Check
+  no-secrets:
+    enabled: true
+    severity: ERROR
+
+  # 3. Mandatory Files Check
+  required-files:
+    enabled: true
+    severity: ERROR
+    files:
+      - "README.md"
+      - "LICENSE"
+      - "CONTRIBUTING.md"
+      - ".gitignore"
+
+  # 4. OpenAPI Spec Policy (ArchGuard is a CLI, not a REST API, so this stays off)
   openapi-exists:
     enabled: false
     severity: ERROR

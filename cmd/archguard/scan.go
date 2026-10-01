@@ -2,14 +2,15 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 
-	"github.com/archguard/archguard/internal/config"
-	"github.com/archguard/archguard/internal/core"
-	"github.com/archguard/archguard/pkg/reporter"
-	"github.com/archguard/archguard/pkg/rule"
+	"github.com/jakkayy/archGuard/internal/config"
+	"github.com/jakkayy/archGuard/internal/core"
+	"github.com/jakkayy/archGuard/pkg/policy"
+	"github.com/jakkayy/archGuard/pkg/reporter"
+	"github.com/jakkayy/archGuard/pkg/rule"
 )
 
 var (
@@ -22,44 +23,20 @@ var scanCmd = &cobra.Command{
 	Use:   "scan",
 	Short: "Scan project for engineering policy violations",
 	Long:  `Scans project files against rules defined in archguard.yaml and outputs a compliance report.`,
+	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if !isValidFormat(formatFlag) {
+			return fmt.Errorf("unsupported --format %q (allowed: %s)", formatFlag, strings.Join(supportedFormats, ", "))
+		}
+
 		cfg, err := config.Load(configPath)
 		if err != nil {
 			return fmt.Errorf("scan failed: %w", err)
 		}
 
-		eng := core.NewEngine()
-
-		// Register built-in rules
-		if fileNamingCfg, ok := cfg.Rules["file-naming"]; ok {
-			pattern, _ := fileNamingCfg.Params["pattern"].(string)
-			namingRule, err := rule.NewFileNamingRule(pattern, core.Severity(fileNamingCfg.Severity))
-			if err != nil {
-				return fmt.Errorf("failed initializing file-naming rule: %w", err)
-			}
-			eng.RegisterRule(namingRule)
-		}
-
-		if openAPICfg, ok := cfg.Rules["openapi-exists"]; ok {
-			path, _ := openAPICfg.Params["path"].(string)
-			openAPIRule := rule.NewOpenAPIExistsRule(path, core.Severity(openAPICfg.Severity))
-			eng.RegisterRule(openAPIRule)
-		}
-
-		if reqFilesCfg, ok := cfg.Rules["required-files"]; ok {
-			var filesList []string
-			if rawFiles, exists := reqFilesCfg.Params["files"].([]any); exists {
-				for _, f := range rawFiles {
-					if str, isStr := f.(string); isStr {
-						filesList = append(filesList, str)
-					}
-				}
-			}
-			eng.RegisterRule(rule.NewRequiredFilesRule(filesList, core.Severity(reqFilesCfg.Severity)))
-		}
-
-		if noSecretsCfg, ok := cfg.Rules["no-secrets"]; ok {
-			eng.RegisterRule(rule.NewNoSecretsRule(core.Severity(noSecretsCfg.Severity)))
+		eng, err := buildEngine(cfg)
+		if err != nil {
+			return fmt.Errorf("scan failed: %w", err)
 		}
 
 		res, err := eng.Run(cmd.Context(), ".", cfg)
@@ -72,21 +49,46 @@ var scanCmd = &cobra.Command{
 		case "json":
 			rep = reporter.NewJSONReporter()
 		case "sarif":
-			rep = reporter.NewSARIFReporter()
+			rep = reporter.NewSARIFReporter(eng.Rules(), rootCmd.Version)
 		default:
 			rep = reporter.NewConsoleReporter(noColor)
 		}
 
-		if err := rep.Report(os.Stdout, res); err != nil {
+		if err := rep.Report(cmd.OutOrStdout(), res); err != nil {
 			return fmt.Errorf("failed to format report: %w", err)
 		}
 
 		if !res.Passed {
-			os.Exit(1)
+			return errPolicyFailed
 		}
 
 		return nil
 	},
+}
+
+var supportedFormats = []string{"console", "json", "sarif"}
+
+func isValidFormat(f string) bool {
+	for _, s := range supportedFormats {
+		if f == s {
+			return true
+		}
+	}
+	return false
+}
+
+// buildEngine registers every built-in rule, configured with params from cfg when present.
+func buildEngine(cfg *config.Config) (*core.Engine, error) {
+	eng := core.NewEngine()
+	for _, def := range rule.Builtins().Definitions() {
+		rc := cfg.Rules[def.ID]
+		r, err := def.Build(rc.Params, policy.Severity(rc.Severity))
+		if err != nil {
+			return nil, err
+		}
+		eng.RegisterRule(r)
+	}
+	return eng, nil
 }
 
 func init() {

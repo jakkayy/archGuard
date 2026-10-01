@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"strings"
@@ -9,6 +10,16 @@ import (
 	"github.com/erikgeiser/promptkit/textinput"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
+
+	"github.com/jakkayy/archGuard/internal/config"
+)
+
+const (
+	strictNamingPattern   = `^[a-z0-9._-]+$`
+	flexibleNamingPattern = `^[a-zA-Z0-9._\-\[\]\(\)]+$`
+	defaultNamingPattern  = `^[a-zA-Z0-9._-]+$`
+	defaultOpenAPIPath    = "docs/openapi.json"
 )
 
 var (
@@ -16,212 +27,229 @@ var (
 	nonInteractive bool
 )
 
+// initAnswers captures the wizard choices used to render archguard.yaml.
+type initAnswers struct {
+	Category       string
+	Framework      string
+	NamingEnabled  bool
+	NamingPattern  string
+	OpenAPIEnabled bool
+	OpenAPIPath    string
+	RequiredFiles  []string
+}
+
+func defaultAnswers() initAnswers {
+	return initAnswers{
+		NamingEnabled: true,
+		NamingPattern: defaultNamingPattern,
+		OpenAPIPath:   defaultOpenAPIPath,
+		RequiredFiles: []string{"README.md", ".gitignore"},
+	}
+}
+
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize default archguard.yaml configuration file",
 	Long:  `Creates an archguard.yaml policy configuration file tailored to your project via an interactive setup wizard.`,
+	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		filename := "archguard.yaml"
+		out := cmd.OutOrStdout()
 
 		if _, err := os.Stat(filename); err == nil && !forceInit {
 			yellow := color.New(color.FgYellow).SprintFunc()
-			fmt.Printf("%s Config file '%s' already exists. Use '--force' to overwrite.\n", yellow("⚠️"), filename)
+			fmt.Fprintf(out, "%s Config file '%s' already exists. Use '--force' to overwrite.\n", yellow("⚠️"), filename)
 			return nil
 		}
 
-		if nonInteractive {
-			return writeDefaultConfig(filename)
+		answers := defaultAnswers()
+		if !nonInteractive {
+			bold := color.New(color.Bold, color.FgCyan).SprintFunc()
+			fmt.Fprintf(out, "\n🛡️  %s\n", bold("ArchGuard Interactive Project Setup"))
+			fmt.Fprintln(out, strings.Repeat("─", 50))
+
+			var err error
+			if answers, err = runWizard(terminalPrompter{}); err != nil {
+				return fmt.Errorf("setup cancelled: %w (use --non-interactive to skip the wizard)", err)
+			}
 		}
 
-		bold := color.New(color.Bold, color.FgCyan).SprintFunc()
-		fmt.Printf("\n🛡️  %s\n", bold("ArchGuard Interactive Project Setup"))
-		fmt.Println(strings.Repeat("─", 50))
-
-		// Question 1: Select Project Category
-		catChoices := []string{
-			"Frontend / Web App (e.g., Next.js, React, Vue, Svelte)",
-			"Backend REST API (e.g., Go, Node.js, Python, Spring Boot)",
-			"Full-Stack App (Frontend + Backend in single repository)",
-			"Library / CLI Tool (Reusable package or command-line utility)",
-		}
-		catSelect := selection.New("Select your project category:", catChoices)
-		selectedCat, err := catSelect.RunPrompt()
+		content, err := renderConfig(answers)
 		if err != nil {
-			return fmt.Errorf("setup cancelled: %w", err)
+			return err
 		}
-
-		var selectedFramework string
-		var isFrontend, isBackend, isFullStack bool
-
-		if strings.HasPrefix(selectedCat, "Frontend") {
-			isFrontend = true
-			fwChoices := []string{
-				"Next.js (App Router / Pages)",
-				"React / Vite / Vue / Nuxt / Svelte",
-				"Other / Generic HTML & JS",
-			}
-			fwSelect := selection.New("Select your Frontend Framework:", fwChoices)
-			selectedFramework, err = fwSelect.RunPrompt()
-			if err != nil {
-				return fmt.Errorf("setup cancelled: %w", err)
-			}
-		} else if strings.HasPrefix(selectedCat, "Backend") {
-			isBackend = true
-			fwChoices := []string{
-				"Go (Gin / Fiber / Echo / Standard)",
-				"Node.js (NestJS / Express)",
-				"Python (FastAPI / Django / Flask)",
-				"Java / Kotlin (Spring Boot)",
-			}
-			fwSelect := selection.New("Select your Backend Framework:", fwChoices)
-			selectedFramework, err = fwSelect.RunPrompt()
-			if err != nil {
-				return fmt.Errorf("setup cancelled: %w", err)
-			}
-		} else if strings.HasPrefix(selectedCat, "Full-Stack") {
-			isFullStack = true
-			isFrontend = true
-			isBackend = true
-
-			fwChoicesFrontend := []string{
-				"Next.js (App Router / Pages)",
-				"React / Vite / Vue / Svelte",
-				"Other / Generic HTML",
-			}
-			fwSelectFE := selection.New("Select your Frontend Framework:", fwChoicesFrontend)
-			selectedFE, err := fwSelectFE.RunPrompt()
-			if err != nil {
-				return fmt.Errorf("setup cancelled: %w", err)
-			}
-
-			fwChoicesBackend := []string{
-				"Go (Gin / Fiber / Echo / Standard)",
-				"Node.js (NestJS / Express)",
-				"Python (FastAPI / Django / Flask)",
-				"Java / Kotlin (Spring Boot)",
-			}
-			fwSelectBE := selection.New("Select your Backend Framework:", fwChoicesBackend)
-			selectedBE, err := fwSelectBE.RunPrompt()
-			if err != nil {
-				return fmt.Errorf("setup cancelled: %w", err)
-			}
-
-			selectedFramework = fmt.Sprintf("%s + %s", selectedFE, selectedBE)
-		} else {
-			fwChoices := []string{
-				"Go",
-				"TypeScript / JavaScript",
-				"Python / Other",
-			}
-			fwSelect := selection.New("Select your primary programming language:", fwChoices)
-			selectedFramework, err = fwSelect.RunPrompt()
-			if err != nil {
-				return fmt.Errorf("setup cancelled: %w", err)
-			}
-		}
-
-		// Question 3: OpenAPI Specification Check (Only for Backend or Full-Stack)
-		openAPIEnabled := false
-		openAPIPath := "docs/openapi.json"
-
-		if isBackend {
-			openAPIChoices := []string{
-				"Yes - Require spec file (Triggers 🚨 ERROR if missing)",
-				"No  - Disable OpenAPI check for now",
-			}
-			openAPISelect := selection.New("Require an OpenAPI / Swagger spec file check for Backend API?", openAPIChoices)
-			selectedOpenAPI, err := openAPISelect.RunPrompt()
-			if err != nil {
-				return fmt.Errorf("setup cancelled: %w", err)
-			}
-
-			if strings.HasPrefix(selectedOpenAPI, "Yes") {
-				openAPIEnabled = true
-				input := textinput.New("Specify OpenAPI spec file path:")
-				input.InitialValue = "docs/openapi.json"
-				inputPath, err := input.RunPrompt()
-				if err == nil && strings.TrimSpace(inputPath) != "" {
-					openAPIPath = strings.TrimSpace(inputPath)
-				}
-			}
-		}
-
-		// Question 4: File Naming Policy
-		namingChoices := []string{
-			"Strict Lowercase (a-z, 0-9, . _ -)      [Recommended for Go / Backend]",
-			"Flexible Framework (Include A-Z, [ ] ()) [Recommended for Next.js / React / Full-Stack]",
-			"Disabled           (Do not enforce file naming convention)",
-		}
-
-		namingSelect := selection.New("Select file naming policy rule:", namingChoices)
-		selectedNaming, err := namingSelect.RunPrompt()
-		if err != nil {
-			return fmt.Errorf("setup cancelled: %w", err)
-		}
-
-		namingEnabled := true
-		namingPattern := `^[a-z0-9._-]+$`
-
-		if strings.HasPrefix(selectedNaming, "Flexible") || isFrontend || isFullStack {
-			if !strings.HasPrefix(selectedNaming, "Disabled") && !strings.HasPrefix(selectedNaming, "Strict") {
-				namingPattern = `^[a-zA-Z0-9._\-\[\]\(\)]+$`
-			}
-		}
-
-		if strings.HasPrefix(selectedNaming, "Disabled") {
-			namingEnabled = false
-		} else if strings.HasPrefix(selectedNaming, "Flexible") {
-			namingPattern = `^[a-zA-Z0-9._\-\[\]\(\)]+$`
-		}
-
-		// Construct archguard.yaml content using single quotes for pattern to avoid YAML escape errors
-		configContent := fmt.Sprintf(`version: "v1"
-
-# Generated for: %s (%s)
-
-rules:
-  file-naming:
-    enabled: %t
-    severity: WARNING
-    pattern: '%s'
-
-  openapi-exists:
-    enabled: %t
-    severity: ERROR
-    path: "%s"
-`, selectedCat, selectedFramework, namingEnabled, namingPattern, openAPIEnabled, openAPIPath)
-
-		if err := os.WriteFile(filename, []byte(configContent), 0644); err != nil {
+		if err := os.WriteFile(filename, content, 0644); err != nil {
 			return fmt.Errorf("failed to write %s: %w", filename, err)
 		}
 
 		green := color.New(color.FgGreen, color.Bold).SprintFunc()
-		fmt.Printf("\n%s Created customized configuration file '%s' successfully!\n", green("✨"), filename)
+		fmt.Fprintf(out, "%s Created configuration file '%s' successfully!\n", green("✨"), filename)
 		return nil
 	},
 }
 
-func writeDefaultConfig(filename string) error {
-	defaultContent := `version: "v1"
+// prompter abstracts the interactive terminal UI so the wizard logic can be tested.
+type prompter interface {
+	Choose(prompt string, choices []string) (string, error)
+	Input(prompt, initial string) (string, error)
+}
 
-rules:
-  file-naming:
-    enabled: true
-    severity: WARNING
-    pattern: '^[a-zA-Z0-9._-]+$'
+type terminalPrompter struct{}
 
-  openapi-exists:
-    enabled: false
-    severity: ERROR
-    path: "docs/openapi.json"
-`
-	if err := os.WriteFile(filename, []byte(defaultContent), 0644); err != nil {
-		return fmt.Errorf("failed to write %s: %w", filename, err)
+func (terminalPrompter) Choose(prompt string, choices []string) (string, error) {
+	return selection.New(prompt, choices).RunPrompt()
+}
+
+func (terminalPrompter) Input(prompt, initial string) (string, error) {
+	input := textinput.New(prompt)
+	input.InitialValue = initial
+	return input.RunPrompt()
+}
+
+var (
+	frontendChoices = []string{
+		"Next.js (App Router / Pages)",
+		"React / Vite / Vue / Nuxt / Svelte",
+		"Other / Generic HTML & JS",
+	}
+	backendChoices = []string{
+		"Go (Gin / Fiber / Echo / Standard)",
+		"Node.js (NestJS / Express)",
+		"Python (FastAPI / Django / Flask)",
+		"Java / Kotlin (Spring Boot)",
+	}
+)
+
+func runWizard(p prompter) (initAnswers, error) {
+	a := defaultAnswers()
+
+	category, err := p.Choose("Select your project category:", []string{
+		"Frontend / Web App (e.g., Next.js, React, Vue, Svelte)",
+		"Backend REST API (e.g., Go, Node.js, Python, Spring Boot)",
+		"Full-Stack App (Frontend + Backend in single repository)",
+		"Library / CLI Tool (Reusable package or command-line utility)",
+	})
+	if err != nil {
+		return a, err
+	}
+	a.Category = category
+
+	isBackend := false
+	switch {
+	case strings.HasPrefix(category, "Frontend"):
+		if a.Framework, err = p.Choose("Select your Frontend Framework:", frontendChoices); err != nil {
+			return a, err
+		}
+	case strings.HasPrefix(category, "Backend"):
+		isBackend = true
+		if a.Framework, err = p.Choose("Select your Backend Framework:", backendChoices); err != nil {
+			return a, err
+		}
+	case strings.HasPrefix(category, "Full-Stack"):
+		isBackend = true
+		fe, err := p.Choose("Select your Frontend Framework:", frontendChoices)
+		if err != nil {
+			return a, err
+		}
+		be, err := p.Choose("Select your Backend Framework:", backendChoices)
+		if err != nil {
+			return a, err
+		}
+		a.Framework = fe + " + " + be
+	default:
+		if a.Framework, err = p.Choose("Select your primary programming language:", []string{
+			"Go",
+			"TypeScript / JavaScript",
+			"Python / Other",
+		}); err != nil {
+			return a, err
+		}
 	}
 
-	green := color.New(color.FgGreen, color.Bold).SprintFunc()
-	fmt.Printf("%s Created default configuration file '%s' successfully!\n", green("✨"), filename)
-	return nil
+	if isBackend {
+		openAPI, err := p.Choose("Require an OpenAPI / Swagger spec file check for Backend API?", []string{
+			"Yes - Require spec file (Triggers 🚨 ERROR if missing)",
+			"No  - Disable OpenAPI check for now",
+		})
+		if err != nil {
+			return a, err
+		}
+		if strings.HasPrefix(openAPI, "Yes") {
+			a.OpenAPIEnabled = true
+			specPath, err := p.Input("Specify OpenAPI spec file path:", defaultOpenAPIPath)
+			if err != nil {
+				return a, err
+			}
+			if specPath = strings.TrimSpace(specPath); specPath != "" {
+				a.OpenAPIPath = specPath
+			}
+		}
+	}
+
+	naming, err := p.Choose("Select file naming policy rule:", []string{
+		"Strict Lowercase (a-z, 0-9, . _ -)      [Recommended for Go / Backend]",
+		"Flexible Framework (Include A-Z, [ ] ()) [Recommended for Next.js / React / Full-Stack]",
+		"Disabled           (Do not enforce file naming convention)",
+	})
+	if err != nil {
+		return a, err
+	}
+	switch {
+	case strings.HasPrefix(naming, "Strict"):
+		a.NamingPattern = strictNamingPattern
+	case strings.HasPrefix(naming, "Flexible"):
+		a.NamingPattern = flexibleNamingPattern
+	default:
+		a.NamingEnabled = false
+	}
+
+	return a, nil
+}
+
+// renderConfig marshals the answers into archguard.yaml content. Using the YAML encoder
+// (rather than string templates) guarantees user-supplied values are quoted correctly.
+func renderConfig(a initAnswers) ([]byte, error) {
+	cfg := config.Config{
+		Version: config.SupportedVersion,
+		Rules: map[string]config.RuleConfig{
+			"file-naming": {
+				Enabled:  a.NamingEnabled,
+				Severity: "WARNING",
+				Params:   map[string]any{"pattern": a.NamingPattern},
+			},
+			"no-secrets": {
+				Enabled:  true,
+				Severity: "ERROR",
+			},
+			"required-files": {
+				Enabled:  true,
+				Severity: "ERROR",
+				Params:   map[string]any{"files": a.RequiredFiles},
+			},
+			"openapi-exists": {
+				Enabled:  a.OpenAPIEnabled,
+				Severity: "ERROR",
+				Params:   map[string]any{"path": a.OpenAPIPath},
+			},
+		},
+	}
+
+	var buf bytes.Buffer
+	buf.WriteString("# ArchGuard policy configuration. Run 'archguard rules' to see all available rules.\n")
+	if a.Category != "" {
+		fmt.Fprintf(&buf, "# Generated for: %s (%s)\n", a.Category, a.Framework)
+	}
+	buf.WriteString("\n")
+
+	enc := yaml.NewEncoder(&buf)
+	enc.SetIndent(2)
+	if err := enc.Encode(cfg); err != nil {
+		return nil, fmt.Errorf("failed to render config: %w", err)
+	}
+	if err := enc.Close(); err != nil {
+		return nil, fmt.Errorf("failed to render config: %w", err)
+	}
+	return buf.Bytes(), nil
 }
 
 func init() {
