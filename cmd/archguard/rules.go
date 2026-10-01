@@ -5,9 +5,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/jakkayy/archGuard/internal/core"
 	"github.com/jakkayy/archGuard/pkg/rule"
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 )
 

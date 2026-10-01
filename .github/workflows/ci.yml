@@ -27,7 +27,12 @@ jobs:
 
       - name: Verify Go Code Formatting & Vet
         run: |
-          gofmt -s -l .
+          unformatted="$(gofmt -s -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "The following files are not gofmt-formatted:"
+            echo "$unformatted"
+            exit 1
+          fi
           go vet ./...
 
       - name: Run Unit Tests
