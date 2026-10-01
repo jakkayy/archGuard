@@ -86,7 +86,8 @@ archguard scan
 | `archguard init` | เปิดหน้าต่าง Interactive Setup Wizard เพื่อสร้างไฟล์ `archguard.yaml` | `-f, --force` (เขียนทับไฟล์เดิม)<br>`-y, --non-interactive` (ข้ามคำถาม) |
 | `archguard scan` | สแกนโปรเจกต์เพื่อตรวจสอบข้อผิดพลาดตามกฎใน `archguard.yaml` | `-c, --config <file>` (ไฟล์คอนฟิก)<br>`-f, --format <console\|json\|sarif>`<br>`--no-color` |
 | `archguard rules` | แสดงรายการ Built-in Policy Rules ทั้งหมดพร้อมคำอธิบายและพารามิเตอร์ | N/A |
-| `archguard install-hook` | ติดตั้งระบบ Pre-commit Hook อัตโนมัติไว้ที่ `.git/hooks/pre-commit` | N/A |
+| `archguard install-hook` | ติดตั้ง Pre-commit Hook (หาตำแหน่งผ่าน `git rev-parse` จึงรองรับ subdirectory, worktree และ `core.hooksPath`) จะไม่เขียนทับ hook เดิมที่ไม่ได้สร้างโดย ArchGuard | `--force` (เขียนทับ hook เดิม) |
+| `archguard uninstall-hook` | ลบ Pre-commit Hook ที่ ArchGuard ติดตั้งไว้ | N/A |
 
 **Exit codes ของ `archguard scan`:**
 
