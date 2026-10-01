@@ -162,35 +162,32 @@ name: ArchGuard Engineering Policy Check
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+  security-events: write # สำหรับอัปโหลด SARIF ไปที่ Security tab
+
 jobs:
-  archguard-scan:
+  archguard:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.25'
-
-      - name: Install ArchGuard Engine
-        run: go install github.com/jakkayy/archGuard/cmd/archguard@latest
-
-      - name: Run ArchGuard Policy Scan
-        run: archguard scan
-
-      - name: Generate & Upload SARIF Security Report
-        run: |
-          archguard scan --format=sarif > archguard-results.sarif
-        continue-on-error: true
-
-      - name: Upload SARIF to GitHub Security Tab
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: archguard-results.sarif
+      - uses: actions/checkout@v4
+      - uses: jakkayy/archGuard@v1
+        # with:
+        #   version: v1.0.0          # ค่าเริ่มต้น: latest
+        #   config: archguard.yaml
+        #   upload-sarif: "true"     # ไฮไลต์บรรทัดที่ผิดใน Pull Request
+        #   fail-on-violation: "true"
 ```
+
+| Input | Default | คำอธิบาย |
+| :--- | :--- | :--- |
+| `version` | `latest` | Release tag ที่จะติดตั้ง หรือ `preinstalled` ถ้ามี `archguard` ใน PATH แล้ว |
+| `config` | `archguard.yaml` | Path ของไฟล์ config |
+| `working-directory` | `.` | โฟลเดอร์ที่จะสแกน |
+| `upload-sarif` | `true` | อัปโหลดผลไปที่ GitHub Code Scanning |
+| `fail-on-violation` | `true` | ให้ job fail เมื่อพบ ERROR-level violation |
+
+Output `exit-code` (`0` ผ่าน, `1` พบ violation, `2` error)
 
 ---
 

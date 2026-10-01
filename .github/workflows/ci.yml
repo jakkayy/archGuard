@@ -65,3 +65,31 @@ jobs:
         continue-on-error: true
         with:
           sarif_file: archguard-results.sarif
+
+  action-self-test:
+    name: Test Reusable GitHub Action
+    runs-on: ubuntu-latest
+    needs: test-and-scan
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go Environment
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build ArchGuard into PATH
+        run: |
+          go build -o "$RUNNER_TEMP/bin/archguard" ./cmd/archguard
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+      - name: Run action against this repository
+        id: archguard
+        uses: ./
+        with:
+          version: preinstalled
+          upload-sarif: "false"
+
+      - name: Assert action passed
+        run: test "${{ steps.archguard.outputs.exit-code }}" = "0"
