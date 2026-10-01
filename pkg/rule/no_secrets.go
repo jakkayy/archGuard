@@ -1,7 +1,7 @@
 package rule
 
 import (
-	"fmt"
+	"bytes"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -34,17 +34,22 @@ func NewNoSecretsRule(severity core.Severity) *NoSecretsRule {
 	patterns := []secretPattern{
 		{
 			name:        "AWS Access Key",
-			regex:       regexp.MustCompile(`AKIA[0-9A-Z]{16}`),
+			regex:       regexp.MustCompile(`\b(AKIA|ASIA)[0-9A-Z]{16}\b`),
 			description: "Potential AWS Access Key ID detected",
 		},
 		{
 			name:        "Private Key",
-			regex:       regexp.MustCompile(`-----BEGIN (RSA|OPENSSH|EC|PGP|PRIVATE) KEY-----`),
-			description: "Private RSA/SSH Key detected",
+			regex:       regexp.MustCompile(`-----BEGIN ((RSA|DSA|EC|OPENSSH|PGP|ENCRYPTED) )?PRIVATE KEY( BLOCK)?-----`),
+			description: "Private key block detected",
+		},
+		{
+			name:        "GitHub Token",
+			regex:       regexp.MustCompile(`\bgh[pousr]_[A-Za-z0-9]{36,}\b`),
+			description: "Potential GitHub access token detected",
 		},
 		{
 			name:        "Hardcoded API Secret",
-			regex:       regexp.MustCompile(`(?i)(api_key|apikey|secret_key|private_key|auth_token)\s*[:=]\s*["'][a-zA-Z0-9_\-]{16,}["']`),
+			regex:       regexp.MustCompile(`(?i)(api_key|apikey|secret_key|private_key|auth_token|access_token|client_secret)\s*[:=]\s*["'][a-zA-Z0-9_\-]{16,}["']`),
 			description: "Potential hardcoded API key or secret token detected",
 		},
 		{
@@ -83,12 +88,20 @@ func (r *NoSecretsRule) Severity() core.Severity {
 	return r.severity
 }
 
-// Run scans workspace files for secret patterns.
+// IgnoreDirective suppresses no-secrets findings on the line where it appears.
+const IgnoreDirective = "archguard:ignore"
+
+const maxScanFileSize = 1024 * 1024
+
+// Run scans workspace files line by line for secret patterns.
 func (r *NoSecretsRule) Run(ctx *core.ScanContext) ([]core.Issue, error) {
 	var issues []core.Issue
 
 	for _, relPath := range ctx.Files {
-		// Skip non-code / lock / image files for efficiency
+		if err := ctx.Ctx.Err(); err != nil {
+			return nil, err
+		}
+
 		ext := strings.ToLower(filepath.Ext(relPath))
 		if isIgnoredExt(ext) {
 			continue
@@ -96,25 +109,30 @@ func (r *NoSecretsRule) Run(ctx *core.ScanContext) ([]core.Issue, error) {
 
 		fullPath := filepath.Join(ctx.WorkingDir, relPath)
 		info, err := os.Stat(fullPath)
-		if err != nil || info.IsDir() || info.Size() > 1024*1024 { // Skip files > 1MB
+		if err != nil || info.IsDir() || info.Size() > maxScanFileSize {
 			continue
 		}
 
-		contentBytes, err := os.ReadFile(fullPath)
-		if err != nil {
+		content, err := os.ReadFile(fullPath)
+		if err != nil || isBinary(content) {
 			continue
 		}
-		content := string(contentBytes)
 
-		for _, p := range r.patterns {
-			if p.regex.MatchString(content) {
-				issues = append(issues, core.Issue{
-					RuleID:     r.id,
-					FilePath:   relPath,
-					Message:    fmt.Sprintf("%s found in file '%s'", p.description, relPath),
-					Severity:   r.severity,
-					Suggestion: "Remove hardcoded secret and use environment variables or secret manager",
-				})
+		for i, line := range strings.Split(string(content), "\n") {
+			if strings.Contains(line, IgnoreDirective) {
+				continue
+			}
+			for _, p := range r.patterns {
+				if p.regex.MatchString(line) {
+					issues = append(issues, core.Issue{
+						RuleID:     r.id,
+						FilePath:   relPath,
+						Line:       i + 1,
+						Message:    p.description,
+						Severity:   r.severity,
+						Suggestion: "Remove hardcoded secret and use environment variables or a secret manager (or add '" + IgnoreDirective + "' if this is a false positive)",
+					})
+				}
 			}
 		}
 	}
@@ -122,20 +140,18 @@ func (r *NoSecretsRule) Run(ctx *core.ScanContext) ([]core.Issue, error) {
 	return issues, nil
 }
 
-func isIgnoredExt(ext string) bool {
-	ignored := map[string]bool{
-		".png":  true,
-		".jpg":  true,
-		".jpeg": true,
-		".gif":  true,
-		".ico":  true,
-		".pdf":  true,
-		".zip":  true,
-		".exe":  true,
-		".tar":  true,
-		".gz":   true,
-		".lock": true,
-		".sum":  true,
+// isBinary reports whether content looks like a binary file (contains a NUL byte in its first 8KB).
+func isBinary(content []byte) bool {
+	if len(content) > 8000 {
+		content = content[:8000]
 	}
-	return ignored[ext]
+	return bytes.IndexByte(content, 0) >= 0
+}
+
+func isIgnoredExt(ext string) bool {
+	switch ext {
+	case ".png", ".jpg", ".jpeg", ".gif", ".ico", ".pdf", ".zip", ".exe", ".tar", ".gz", ".lock", ".sum":
+		return true
+	}
+	return false
 }
