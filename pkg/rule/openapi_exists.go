@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/archguard/archguard/internal/core"
+	"github.com/jakkayy/archGuard/internal/core"
 )
 
 // OpenAPIExistsRule validates that the designated OpenAPI specification file exists.

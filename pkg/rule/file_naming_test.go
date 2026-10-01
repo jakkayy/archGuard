@@ -3,8 +3,8 @@ package rule_test
 import (
 	"testing"
 
-	"github.com/archguard/archguard/internal/core"
-	"github.com/archguard/archguard/pkg/rule"
+	"github.com/jakkayy/archGuard/internal/core"
+	"github.com/jakkayy/archGuard/pkg/rule"
 )
 
 func TestFileNamingRule_ValidFiles(t *testing.T) {

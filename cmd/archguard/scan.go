@@ -6,10 +6,10 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/archguard/archguard/internal/config"
-	"github.com/archguard/archguard/internal/core"
-	"github.com/archguard/archguard/pkg/reporter"
-	"github.com/archguard/archguard/pkg/rule"
+	"github.com/jakkayy/archGuard/internal/config"
+	"github.com/jakkayy/archGuard/internal/core"
+	"github.com/jakkayy/archGuard/pkg/reporter"
+	"github.com/jakkayy/archGuard/pkg/rule"
 )
 
 var (

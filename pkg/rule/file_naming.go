@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/archguard/archguard/internal/core"
+	"github.com/jakkayy/archGuard/internal/core"
 )
 
 // FileNamingRule validates project filenames against a specified regex pattern.

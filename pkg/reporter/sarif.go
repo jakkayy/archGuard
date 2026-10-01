@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/archguard/archguard/internal/core"
+	"github.com/jakkayy/archGuard/internal/core"
 )
 
 // SARIFLog represents the top-level SARIF v2.1.0 JSON structure.
@@ -115,7 +115,7 @@ func (r *SARIFReporter) Report(w io.Writer, res *core.ScanResult) error {
 				Tool: SARIFTool{
 					Driver: SARIFDriver{
 						Name:           "ArchGuard",
-						InformationURI: "https://github.com/archguard/archguard",
+						InformationURI: "https://github.com/jakkayy/archGuard",
 					},
 				},
 				Results: results,

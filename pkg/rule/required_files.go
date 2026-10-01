@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/archguard/archguard/internal/core"
+	"github.com/jakkayy/archGuard/internal/core"
 )
 
 // RequiredFilesRule validates that designated mandatory files exist in the project.

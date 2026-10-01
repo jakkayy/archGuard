@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/archguard/archguard/internal/core"
+	"github.com/jakkayy/archGuard/internal/core"
 )
 
 func TestSARIFReporter_Report(t *testing.T) {

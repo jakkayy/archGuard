@@ -1,4 +1,4 @@
-module github.com/archguard/archguard
+module github.com/jakkayy/archGuard
 
 go 1.25.0
 

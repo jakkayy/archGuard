@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/archguard/archguard/internal/config"
+	"github.com/jakkayy/archGuard/internal/config"
 )
 
 func TestLoad_Success(t *testing.T) {

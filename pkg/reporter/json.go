@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/archguard/archguard/internal/core"
+	"github.com/jakkayy/archGuard/internal/core"
 )
 
 // JSONReporter formats scan results into indented JSON output.

@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/archguard/archguard/internal/config"
-	"github.com/archguard/archguard/internal/core"
+	"github.com/jakkayy/archGuard/internal/config"
+	"github.com/jakkayy/archGuard/internal/core"
 )
 
 type mockRule struct {

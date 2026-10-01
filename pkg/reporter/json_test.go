@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/archguard/archguard/internal/core"
-	"github.com/archguard/archguard/pkg/reporter"
+	"github.com/jakkayy/archGuard/internal/core"
+	"github.com/jakkayy/archGuard/pkg/reporter"
 )
 
 func TestJSONReporter_Report(t *testing.T) {

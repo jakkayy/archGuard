@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/archguard/archguard/internal/config"
+	"github.com/jakkayy/archGuard/internal/config"
 )
 
 // Engine orchestrates project scanning by executing registered policy rules.
